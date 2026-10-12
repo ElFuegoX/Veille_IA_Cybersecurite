@@ -7,7 +7,8 @@ data/textes/<id>.txt (local, ignoré par Git : jamais publié).
 
 Rejouable : ne traite que les lignes dont statut_extraction est vide.
   --refaire-echecs   retente aussi les lignes en « echec_http »
-  --limite N         traite au plus N articles (utile pour tester)
+  --limite N         au plus N téléchargements par exécution (les liens inutilisables
+                     et les sites interdits par robots.txt ne comptent pas)
 
 Statuts : ok | vide (page lue, pas de texte) | echec_http | robots (interdit par
 robots.txt) | lien_redirection (lien Google inutilisable).
@@ -122,18 +123,20 @@ def main():
         r for r in lignes
         if not r["statut_extraction"] or (args.refaire_echecs and r["statut_extraction"] == "echec_http")
     ]
-    if args.limite:
-        a_faire = a_faire[: args.limite]
     print(f"{len(a_faire)} article(s) à traiter sur {len(lignes)}")
 
     bilan = Counter()
+    telecharges = 0
     try:
         for i, r in enumerate(a_faire, start=1):
+            if args.limite and telecharges >= args.limite:
+                break
             statut = traiter_ligne(r)
             r["statut_extraction"] = statut
             bilan[statut] += 1
             print(f"[{i}/{len(a_faire)}] {statut:<16} {r['id']} {r['titre'][:60]}")
             if statut not in {"lien_redirection", "robots"}:
+                telecharges += 1
                 time.sleep(DELAI)
     finally:  # on enregistre même si le script est interrompu
         ecrire_csv(args.csv, lignes)

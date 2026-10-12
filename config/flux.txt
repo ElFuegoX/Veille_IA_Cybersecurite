@@ -9,7 +9,7 @@ Alerte Joanès | https://www.google.com/alerts/feeds/12072149255981488419/858907
 # Donald
 Alerte Donald 1 (AI-powered, adversarial AI...) | https://www.google.com/alerts/feeds/09157947447511513214/4020837709087679206
 Alerte Donald 2 (artificial intelligence, LLM...) | https://www.google.com/alerts/feeds/09157947447511513214/1980280094891079751
-BleepingComputer | https://www.bleepingcomputer.com/feed/ 
-CERT-FR | https://www.cert.ssi.gouv.fr/cti/feed/
+BleepingComputer | https://www.bleepingcomputer.com/feed/ | filtre=ia 
+CERT-FR | https://www.cert.ssi.gouv.fr/cti/feed/ | filtre=ia
 arXiv cs.CR | https://rss.arxiv.org/rss/cs.CR | filtre=ia
-Microsoft Security Blog | https://www.microsoft.com/en-us/security/blog/feed/
+Microsoft Security Blog | https://www.microsoft.com/en-us/security/blog/feed/ | filtre=ia
