@@ -1,0 +1,8 @@
+# titre | lien
+Chinese developer makes ARTEX AI agent closed-source after Korean bank hack | https://www.reuters.com/world/china/chinese-developer-makes-artex-ai-agent-closed-source-after-korean-bank-hack-2026-10-09/
+Anthropic discloses fake tip to police among new rogue AI incidents | https://www.reuters.com/world/us/anthropic-ai-model-submits-false-homicide-tip-police-website-2026-10-09/
+Introducing the Anthropic Cyber Mission | https://www.anthropic.com/news/anthropic-cyber-mission
+Rubrik Expands Project Hourglass with Rubrik Code Guardian, Powered by Claude | https://www.rubrik.com/company/newsroom/press-releases/26/rubrik-expands-project-hourglass-with-rubrik-code-guardian-powered-by-claude
+Hack The Box Launches AI Range Enterprise Edition to Set a New Standard for AI Agent Competence in Cybersecurity | https://www.hackthebox.com/blog/hack-the-box-launches-ai-range-enterprise-edition
+Open and Emergent Problems in Agentic Privacy and Security: A Contextual Angle | https://research.google/blog/open-and-emergent-problems-in-agentic-privacy-and-security-a-contextual-angle/
+An Organization-Scoped LLM Agent Runtime Architecture for Regulated Cybersecurity Operations | https://arxiv.org/abs/2605.30604

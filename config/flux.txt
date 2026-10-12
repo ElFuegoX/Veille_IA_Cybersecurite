@@ -1,0 +1,15 @@
+# Loan
+The Hacker News | https://feeds.feedburner.com/TheHackersNews | filtre=ia
+Google Actualités AI cybersecurity | https://news.google.com/rss/search?q=AI+cybersecurity+when:7d&hl=en-US&gl=US&ceid=US:en | filtre=ia
+Alerte Loan | https://www.google.fr/alerts/feeds/03912132933511960756/6914849082334786210
+
+# Joanès
+Alerte Joanès | https://www.google.com/alerts/feeds/12072149255981488419/8589077056019040891
+
+# Donald
+Alerte Donald 1 (AI-powered, adversarial AI...) | https://www.google.com/alerts/feeds/09157947447511513214/4020837709087679206
+Alerte Donald 2 (artificial intelligence, LLM...) | https://www.google.com/alerts/feeds/09157947447511513214/1980280094891079751
+BleepingComputer | https://www.bleepingcomputer.com/feed/ 
+CERT-FR | https://www.cert.ssi.gouv.fr/cti/feed/
+arXiv cs.CR | https://rss.arxiv.org/rss/cs.CR | filtre=ia
+Microsoft Security Blog | https://www.microsoft.com/en-us/security/blog/feed/

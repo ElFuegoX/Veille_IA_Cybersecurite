@@ -1,1 +1,9 @@
-
+# Texte complet des articles : jamais publié
+data/textes/*
+!data/textes/.gitkeep
+# Secrets et divers
+.env
+*.key
+__pycache__/
+*.pyc
+*.tmp
