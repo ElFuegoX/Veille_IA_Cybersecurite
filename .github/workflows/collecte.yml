@@ -33,6 +33,14 @@ jobs:
       - name: Extraction des articles (60 par exécution)
         run: python scripts/02_extraction.py --limite 60
 
+      # Juste après l'extraction : les textes (data/textes/) n'existent que pendant ce job.
+      # Sans secret GROQ_API_KEY (ou GEMINI_API_KEY), les règles seules sont utilisées.
+      - name: Notes CRAAP
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/04_qualite.py
+
       - name: Comptage des reprises d'une même histoire
         run: python scripts/03_reprises.py
 

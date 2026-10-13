@@ -1,0 +1,199 @@
+# Grille de notation P2 : CRAAP sur 11 (pertinence de 0 à 3, les 4 autres critères de 0 à 2).
+# Utilisée par scripts/04_qualite.py. Modifier ici, pas dans le code.
+#
+# Termes des listes : mots entiers (pluriel en -s/-es accepté), sans tenir compte
+# de la casse. Une étoile finale en fait un début de mot : « vulnérab* » trouve
+# vulnérabilité, vulnérabilités... (éviter l'étoile sur les termes courts :
+# « soc* » trouverait aussi « social »).
+
+# --- Pertinence (critère CRAAP, échelle validée le 12/10/2026) -------------------
+# Notée directement dans craap_pertinence :
+# 0 = aucun lien avec les termes IA / cyber
+# 1 = un seul des deux thèmes développé
+# 2 = les deux thèmes présents dans le texte, mais absents du titre
+# 3 = les deux thèmes présents dans le texte ET dans le titre
+pertinence:
+  seuil_analyse: 2          # pertinence >= 2 : article gardé pour l'analyse (et noté par l'IA si active)
+  occurrences_texte: 2      # un thème est « développé » s'il apparaît au moins N fois dans le texte
+  # Les termes IA viennent de commun.FILTRES["ia"] (même filtre que la collecte),
+  # complétés par cette liste :
+  termes_ia_en_plus:
+    - agent ia
+    - agents ia
+    - ai agent
+    - neural network
+    - réseau de neurones
+  termes_cyber:
+    - cyber*
+    - sécurité
+    - securit*
+    - hack*
+    - malware*
+    - ransomware*
+    - rançongiciel*
+    - phish*
+    - hameçonn*
+    - vulnérab*
+    - vulnerab*
+    - faille*
+    - exploit*
+    - cve-*
+    - zero-day
+    - 0-day
+    - breach*
+    - fuite de données
+    - data leak
+    - intrusion*
+    - attaqu*
+    - attack*
+    - threat*
+    - menace*
+    - botnet*
+    - backdoor*
+    - porte dérobée
+    - trojan
+    - cheval de troie
+    - spyware*
+    - logiciel espion
+    - infostealer*
+    - stealer*
+    - apt
+    - soc
+    - siem
+    - edr
+    - prompt injection
+    - injection de prompt
+    - jailbreak*
+    - deepfake*
+    - fraud*
+    - espionna*
+    - espiona*
+    - cert
+    - anssi
+    - cisa
+
+# --- Actualité ------------------------------------------------------------------
+# 2 = moins de 6 mois ; 1 = 6 à 18 mois ; 0 = plus ancien ou date introuvable
+actualite:
+  jours_2_points: 183
+  jours_1_point: 548
+
+# --- Exactitude : signaux de faits vérifiables ------------------------------------
+# On compte les CATÉGORIES de signaux trouvées (pas le nombre de mots).
+# 2 = au moins 3 catégories ; 1 = 1 ou 2 catégories ; 0 = aucune.
+# Sans texte complet (seulement le résumé), la note est fixée à 1 (neutre, à vérifier).
+exactitude:
+  categories_pour_2_points: 3
+  signaux:
+    etude_rapport:
+      - report*
+      - rapport*
+      - study
+      - étude
+      - research*
+      - recherche*
+      - paper
+      - survey
+      - enquête*
+      - analys*
+      - whitepaper*
+      - advisor*
+      - avis de sécurité
+    source_citee:
+      - according to
+      - selon
+      - said
+      - a déclaré
+      - a indiqué
+      - told
+      - confirmed
+      - a confirmé
+      - spokesperson
+      - porte-parole
+      - statement
+      - communiqué
+    acteur_identifie:
+      - researcher*
+      - chercheur*
+      - cert
+      - cisa
+      - anssi
+      - nist
+      - enisa
+      - fbi
+      - europol
+      - mandiant
+      - crowdstrike
+      - kaspersky
+      - eset
+      - check point
+      - palo alto
+      - unit 42
+      - talos
+      - group-ib
+  # Catégories détectées par motif (dans le code) : identifiant CVE, chiffres
+  # (pourcentages, montants, quantités), citations entre guillemets.
+
+# --- Objectif : signaux commerciaux ou accrocheurs ---------------------------------
+# 2 = informer / analyser de façon neutre
+# 1 = intérêt commercial visible (1 signal, ou source de type « éditeur »)
+# 0 = promotionnel ou accrocheur (au moins 2 signaux, ou titre accrocheur)
+objectif:
+  signaux_commerciaux:
+    - sponsor*
+    - partner content
+    - contenu partenaire
+    - publireportage*
+    - request a demo
+    - book a demo
+    - demande de démo
+    - free trial
+    - essai gratuit
+    - webinar*
+    - webinaire*
+    - download the
+    - téléchargez*
+    - our platform
+    - notre plateforme
+    - our solution
+    - notre solution
+    - our customers
+    - nos clients
+    - leading provider
+    - leader du marché
+    - industry-leading
+    - press release
+    - communiqué de presse
+    - contact us
+    - contactez-nous
+    - sign up
+    - inscrivez-vous
+  titre_accrocheur:
+    - you won't believe
+    - shocking
+    - incroyable
+    - choc
+    - must-read
+    - "!!"
+
+# --- Seuils du total CRAAP (sur 11) -------------------------------------------------
+seuils_craap:
+  fiable: 9       # 9 et plus
+  prudence: 6     # 6 à 8 ; 5 et moins = écarté (sauf cas d'étude)
+
+# --- IA (optionnel) : affine exactitude et objectif ---------------------------------
+# Utilisée seulement si la clé API est présente dans l'environnement, et seulement
+# pour les articles dont la pertinence atteint le seuil d'analyse.
+# Groq et Gemini acceptent tous deux le format « OpenAI chat completions ».
+llm:
+  fournisseurs:
+    groq:
+      url: https://api.groq.com/openai/v1/chat/completions
+      modele: llama-3.3-70b-versatile
+      variable_cle: GROQ_API_KEY
+    gemini:
+      url: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+      modele: gemini-2.5-flash
+      variable_cle: GEMINI_API_KEY
+  caracteres_max: 6000      # extrait du texte envoyé au modèle
+  pause_secondes: 2.5       # entre deux appels (limites des offres gratuites)

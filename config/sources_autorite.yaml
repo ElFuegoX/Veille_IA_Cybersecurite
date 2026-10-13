@@ -1,0 +1,248 @@
+# Sources reconnues pour le critère Autorité du CRAAP (P2, tâche 2.3).
+# Utilisé par scripts/04_qualite.py.
+#
+# Note d'autorité d'un article :
+#   2 = auteur identifié ET source de catégorie « plafond 2 »
+#   1 = source identifiée sans auteur, ou source de catégorie « plafond 1 » (blog, éditeur...)
+#   0 = anonyme, source inconnue (absente de ce fichier) ou catégorie « plafond 0 »
+#
+# Chaque entrée est soit un domaine (sous-domaines compris : « paloaltonetworks.com »
+# couvre « unit42.paloaltonetworks.com »), soit un nom de média tel qu'il apparaît
+# dans la colonne « source » (Google Actualités donne le nom, pas le domaine).
+# La casse et la ponctuation des noms sont ignorées.
+#
+# Les sources inconnues sont listées à la fin de chaque exécution du script :
+# les ajouter ici (dans la bonne catégorie) puis relancer avec --refaire.
+
+# Domaines publics reconnus automatiquement comme « institution » (fin du domaine)
+suffixes_institution:
+  - .gov
+  - .gouv.fr
+  - .gov.uk
+  - .gov.au
+  - .gov.wales
+  - .europa.eu
+  - .edu
+  - .ac.uk
+  - .int
+
+categories:
+  institution:
+    plafond: 2
+    description: agences, CERT, autorités, organisations internationales
+    sources:
+      - cert.ssi.gouv.fr
+      - ssi.gouv.fr
+      - cnil.fr
+      - enisa.europa.eu
+      - ncsc.gov.uk
+      - cisa.gov
+      - nist.gov
+      - weforum.org
+      - The World Economic Forum
+      - World Economic Forum
+      - House Homeland Democrats (.gov)
+      - oecd.org
+      - un.org
+
+  recherche:
+    plafond: 2
+    description: publications scientifiques et laboratoires
+    sources:
+      - arxiv.org
+      - ieeexplore.ieee.org
+      - ieee.org
+      - acm.org
+      - Communications of the ACM
+      - usenix.org
+      - nature.com
+      - research.google
+      - e-ir.org
+
+  presse_specialisee:
+    plafond: 2
+    description: médias spécialisés cybersécurité / technologie
+    sources:
+      - thehackernews.com
+      - The Hacker News
+      - bleepingcomputer.com
+      - darkreading.com
+      - Dark Reading
+      - securityweek.com
+      - SecurityWeek
+      - therecord.media
+      - The Record from Recorded Future News
+      - helpnetsecurity.com
+      - Help Net Security
+      - cybersecuritydive.com
+      - Cybersecurity Dive
+      - securityaffairs.com
+      - Security Affairs
+      - theregister.com
+      - industrialcyber.co
+      - Industrial Cyber
+      - scworld.com
+      - krebsonsecurity.com
+      - infosecurity-magazine.com
+      - csoonline.com
+      - lemagit.fr
+      - zataz.com
+      - 01net.com
+      - zdnet.com
+      - zdnet.fr
+      - wired.com
+      - arstechnica.com
+      - techcrunch.com
+      - theverge.com
+      - venturebeat.com
+      - tomshardware.com
+      - pcmag.com
+      - PCMag
+      - techradar.com
+      - TechRadar
+      - gizmodo.com
+      - defensescoop.com
+      - DefenseScoop
+      - Breaking Defense
+      - federalnewsnetwork.com
+      - Federal News Network
+      - MeriTalk
+      - GovTech
+      - msspalert.com
+      - MSSP Alert
+      - Healthcare IT News
+      - australiancybersecuritymagazine.com.au
+
+  presse_generaliste:
+    plafond: 2
+    description: presse généraliste et économique reconnue
+    sources:
+      - reuters.com
+      - Reuters
+      - apnews.com
+      - bbc.com
+      - bbc.co.uk
+      - theguardian.com
+      - The Guardian
+      - nytimes.com
+      - washingtonpost.com
+      - wsj.com
+      - WSJ
+      - ft.com
+      - bloomberg.com
+      - economist.com
+      - lemonde.fr
+      - lefigaro.fr
+      - liberation.fr
+      - francetvinfo.fr
+      - rfi.fr
+      - afp.com
+      - cnbc.com
+      - CNBC
+      - axios.com
+      - Axios
+      - politico.com
+      - Politico
+      - thehill.com
+      - abcnews.com
+      - foxnews.com
+      - Fox News
+      - nypost.com
+      - forbes.com
+      - Business Insider
+      - Barron's
+      - aljazeera.com
+      - Al Jazeera
+      - euronews.com
+      - finance.yahoo.com
+      - Yahoo Finance
+      - channelnewsasia.com
+      - straitstimes.com
+      - japantimes.co.jp
+      - taipeitimes.com
+      - thestar.com.my
+      - philstar.com
+      - canberratimes.com.au
+      - rnz.co.nz
+      - mk.co.kr
+      - ynetnews.com
+      - qz.com
+      - medicalxpress.com
+      - Spectrum News
+      - spectrumlocalnews.com
+
+  editeur:
+    plafond: 1
+    description: blogs d'éditeurs et d'entreprises, cabinets, communiqués (intérêt propre)
+    sources:
+      - microsoft.com
+      - Microsoft
+      - Microsoft Source
+      - blogs.microsoft.com
+      - anthropic.com
+      - Anthropic
+      - openai.com
+      - paloaltonetworks.com
+      - Palo Alto Networks
+      - crowdstrike.com
+      - group-ib.com
+      - Group-IB
+      - eset.com
+      - bitdefender.com
+      - malwarebytes.com
+      - kaspersky.com
+      - sophos.com
+      - checkpoint.com
+      - trendmicro.com
+      - mandiant.com
+      - cloudflare.com
+      - fortinet.com
+      - rubrik.com
+      - ibm.com
+      - thalesgroup.com
+      - stengg.com
+      - knowbe4.com
+      - KnowBe4 Blog
+      - hackthebox.com
+      - accenture.com
+      - ey.com
+      - marks-clerk.com
+      - businesswire.com
+      - Business Wire
+      - PR Newswire
+      - prnewswire.com
+      - Cybersecurity Insiders
+      - cybersecurity-insiders.com
+      - securityboulevard.com
+      - Security Boulevard
+      - cybersecuritynews.com
+      - marktechpost.com
+      - pymnts.com
+      - Seeking Alpha
+      - The Motley Fool
+      - InvestorPlace
+      - Benzinga
+
+  reseau_social:
+    plafond: 1
+    description: comptes identifiés sur les réseaux sociaux (source identifiée, contenu non vérifié)
+    sources:
+      - facebook.com
+      - instagram.com
+      - linkedin.com
+      - LinkedIn
+      - youtube.com
+      - x.com
+      - twitter.com
+
+  non_fiable:
+    plafond: 0
+    description: contenus anonymes, offres d'emploi, agrégateurs sans éditeur identifié
+    sources:
+      - reddit.com
+      - medium.com
+      - finance.biggo.com
+      - tradingview.com
+      - careers.bathandbodyworks.com
+      - careers.societegenerale.com
+      - jobs.nvidia.com
