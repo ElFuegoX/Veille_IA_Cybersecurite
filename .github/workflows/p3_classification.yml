@@ -1,0 +1,65 @@
+name: P3 classification
+
+on:
+  workflow_run:
+    workflows: ["Collecte"]  
+    types: [completed]
+  workflow_dispatch:
+
+# Même groupe que la collecte : jamais deux workflows qui écrivent le CSV en même temps
+concurrency:
+  group: veille-csv
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  p3:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests rapidfuzz
+
+      # À DÉCIDER AVEC P1 : récupérer ici les textes (data/textes) avant de classer.
+
+      - name: Vérifier la présence des textes
+        run: |
+          if [ -z "$(ls -A data/textes 2>/dev/null)" ]; then
+            echo "::warning::data/textes est vide : la classification ne traitera aucun article."
+          fi
+
+      - name: Classification
+        env:
+          LLM_FOURNISSEUR: gemini
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LLM_MODELE: gemini-3.5-flash-lite  
+        run: python scripts/06_classifier.py --csv data/articles.csv --limite 60
+
+      - name: CVE et entreprises
+        if: ${{ !cancelled() }}
+        run: python scripts/07_cve.py --csv data/articles.csv
+
+      - name: Notabilité
+        if: ${{ !cancelled() }}
+        run: python scripts/08_notabilite.py --csv data/articles.csv
+
+      - name: Commit du CSV
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/articles.csv
+          git diff --cached --quiet && exit 0
+          git commit -m "P3 : classification, CVE, notabilité"
+          git pull --rebase origin main
+          git push

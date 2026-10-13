@@ -1,6 +1,6 @@
 """Éléments communs aux scripts : schéma du CSV, lecture/écriture, nettoyage.
 
-Le schéma (26 colonnes) est gelé ici. Chaque script ne remplit que ses colonnes
+Le schéma (33 colonnes) est gelé ici. Chaque script ne remplit que ses colonnes
 et conserve toutes les autres telles quelles.
 """
 import csv
@@ -29,8 +29,8 @@ BLOCS = {
         "craap_actualite", "craap_pertinence", "craap_autorite", "craap_exactitude",
         "craap_objectif", "craap_total", "craap_justification",
     ],
-    "P3_sous_themes": ["s1", "s2", "s3", "s4", "s5", "justification_theme"],
-    "P3_cas": ["nb_sources_reprise", "score_notabilite"],
+    "P3_sous_themes": ["s1", "s2", "s3", "s4", "s5", "s6", "theme_principal", "justification_theme", "a_verifier"],
+    "P3_cas": ["nb_sources_reprise", "score_notabilite", "cves", "entreprises", "cve_kev", "cas_retenu"],
     "P4_controle": ["valide_manuel", "relecteur"],
 }
 COLONNES = [c for cols in BLOCS.values() for c in cols]
@@ -228,3 +228,22 @@ def resume_court(texte, max_car=400):
     if not out:
         out = texte[:max_car].rsplit(" ", 1)[0] + "…"
     return out
+
+
+# ----------------------------------------------------------------------------
+# Identifiants et pertinence (partagés par classifier.py et cve.py)
+# ----------------------------------------------------------------------------
+SEUIL_PERTINENCE = 2  # craap_pertinence minimum pour qu'un article soit traité par P3
+
+
+def norm_id(x):
+    """'5' (Excel a retiré les zéros) et '0005' désignent le même article."""
+    x = str(x or "").strip()
+    return x.zfill(4) if x.isdigit() else x
+
+
+def pertinence_ok(r):
+    try:
+        return float((r.get("craap_pertinence") or "").replace(",", ".")) >= SEUIL_PERTINENCE
+    except ValueError:
+        return False

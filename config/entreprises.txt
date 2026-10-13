@@ -1,0 +1,52 @@
+# Format : Nom canonique|alias1|alias2 ... (une entreprise par ligne)
+# Les lignes qui commencent par # sont ignorées.
+# Le nom écrit dans le CSV est toujours le premier de la ligne.
+# Recherche : sensible à la casse, mot entier ("Meta" ne doit pas trouver "metadata").
+Microsoft
+Google|Alphabet|DeepMind
+OpenAI|ChatGPT
+Anthropic|Claude
+Meta
+Amazon|AWS|Amazon Web Services
+Apple
+Nvidia|NVIDIA
+IBM
+Cisco
+Cloudflare
+CrowdStrike
+Palo Alto Networks|Palo Alto
+Fortinet
+SentinelOne
+Check Point|Checkpoint
+Zscaler
+Okta
+Darktrace
+Mandiant
+Kaspersky
+ESET
+Sophos
+Trend Micro|TrendMicro
+Mistral AI|Mistral
+DeepSeek
+GitHub|Github
+Hugging Face|HuggingFace
+SonicWall
+Accenture
+Hack The Box|HackTheBox
+Reco
+Wiz
+Snyk
+Rapid7
+Tenable
+Qualys
+Proofpoint
+CyberArk
+Splunk
+Recorded Future
+Bitdefender
+Akamai
+Trellix
+Ivanti
+Citrix|NetScaler
+xAI
+Cohere
