@@ -45,6 +45,34 @@ Les autres colonnes (schéma de 26 colonnes dans `scripts/commun.py`) ne sont ja
   2. `02_extraction.py` puis `04_qualite.py` avec `--csv data/echantillon.csv`
   3. `python scripts/05_evaluer_qualite.py` → accord par critère, kappa, désaccords à examiner.
 
+  ## P3 – Analyse (sous-thèmes et cas remarquables)
+- `python scripts/06_classifier.py` → s1 à s6 (0/1), `theme_principal` (S1 à S6),
+  `justification_theme` (citation mot pour mot), `a_verifier`. Ne traite que les lignes pertinentes
+  (`craap_pertinence` ≥ 2) dont le texte existe dans `data/textes/`. Rejouable (lignes sans
+  `theme_principal`).
+- `python scripts/07_cve.py` → `cves`, `entreprises`, `cve_kev` (aucun / oui / non, d'après le
+  catalogue CISA KEV). La fonction `extraire_cves` est réutilisable par P2.
+- `python scripts/08_notabilite.py` → `score_notabilite` et `cas_retenu`. Recalculé à chaque
+  exécution. Cas retenu : score ≥ 8, ou meilleur article de son sous-thème.
+  `nb_sources_reprise` est lu depuis `03_reprises.py` (P1), pas recalculé.
+- Définitions des sous-thèmes et cas limites : `config/sous_themes.md`. Prompt envoyé au modèle :
+  `config/prompt_classification.txt`. Entreprises recherchées : `config/entreprises.txt`.
+- IA : Gemini (modèle `gemini-3.5-flash-lite`), variables `LLM_FOURNISSEUR=gemini`,
+  `GEMINI_API_KEY` (secret GitHub du même nom) et `LLM_MODELE`. Quota gratuit à vérifier
+  dans Google AI Studio. Sans clé ou sans texte : aucune ligne classée.
+- Workflow : `.github/workflows/p3_classification.yml` (lancement manuel ; déclenchement après la
+  collecte à activer quand la question des textes sera réglée). Même groupe `concurrency` que la
+  collecte pour ne jamais écrire le CSV en même temps.
+- Mode test sans API : `06_classifier.py --lot N` affiche le prompt de N articles à coller dans le
+  chat, `--importer fichier.json` réinjecte la réponse, `--evaluer` compare à l'annotation manuelle
+  (`data/echantillon.csv`) sans l'écraser (sortie dans `data/echantillon_auto.csv`).
+  Vérifiez les options disponibles avec `--help`.
+- Évaluation du classifieur : taux d'accord avec l'annotation manuelle à mesurer avec
+  `06_classifier.py --evaluer` (résultats à ajouter ici et au §7 du rapport une fois les textes
+  disponibles).
+- Texte complet : absent dans GitHub Actions tant que la récupération des textes n'est pas réglée
+  avec P1 ; la classification ne traite alors aucun article.
+
 ## Règles
 - Doublon = même lien, ou même titre (ou titre très proche) **chez la même source**. La même
   histoire chez un autre éditeur est conservée.

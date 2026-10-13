@@ -34,8 +34,8 @@ jobs:
 
       - name: Vérifier la présence des textes
         run: |
-          if [ -z "$(ls -A data/textes 2>/dev/null)" ]; then
-            echo "::warning::data/textes est vide : la classification ne traitera aucun article."
+          if [ -z "$(find data/textes -name '*.txt' 2>/dev/null | head -1)" ]; then
+            echo "::warning::Aucun fichier .txt dans data/textes : la classification ne traitera aucun article."
           fi
 
       - name: Classification
