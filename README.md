@@ -11,6 +11,22 @@
 
 Pour développer sur l'échantillon : ajouter `--csv data/echantillon.csv` à chaque commande.
 
+## Site Web & Application (React / Vite)
+Le site de veille est situé dans le dossier `site/` :
+
+```sh
+cd site
+npm install
+npm run dev
+```
+
+Trois pages principales :
+- **Accueil / Tableau de bord** : statistiques, graphiques par sous-thèmes, fiabilité CRAAP, timeline.
+- **Veille** : tableau complet filtrable/triable des articles, recherche, export CSV public.
+- **Rapport** : téléchargement du rapport PDF final.
+
+
+
 ## Colonnes remplies par P1
 id, date_publication, titre, auteur, lien, source, langue, resume, statut_extraction, nb_sources_reprise.
 Les autres colonnes (schéma de 26 colonnes dans `scripts/commun.py`) ne sont jamais modifiées.

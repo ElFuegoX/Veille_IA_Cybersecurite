@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Veille IA &amp; Cybersécurité — Tableau de bord</title>
+<meta name="description" content="Outil de consultation de veille sur l'IA et la cybersécurité : articles collectés, tendances, filtres, export CSV public.">
+<style>
+/* ==========================================================================
+   Veille IA & Cybersécurité — maquette
+   Palette sobre : fond bleuté clair, accents bleu / cyan / vert.
+   Orange et rouge réservés aux alertes et niveaux faibles.
+   ========================================================================== */
+:root{
+  --bg:#f2f5fb;
+  --bg-2:#e9eef8;
+  --surface:#ffffff;
+  --surface-2:#f7f9fd;
+  --border:#e2e8f2;
+  --border-strong:#cfd8e6;
+  --text:#14213a;
+  --text-2:#33455f;
+  --muted:#64748b;
+  --blue:#2563eb;
+  --blue-dark:#1d4ed8;
+  --blue-soft:#eaf1ff;
+  --cyan:#0e8aa8;
+  --cyan-soft:#e4f5f9;
+  --green:#0f9d6e;
+  --green-soft:#e5f7f0;
+  --amber:#b9740b;
+  --amber-soft:#fdf3e2;
+  --red:#d14343;
+  --red-soft:#fdecec;
+  --violet:#6d5bd0;
+  --shadow-sm:0 1px 2px rgba(18,33,58,.05);
+  --shadow:0 1px 3px rgba(18,33,58,.07), 0 6px 16px -8px rgba(18,33,58,.14);
+  --radius:12px;
+  --radius-sm:8px;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--text);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
+
+/* ---------- Barre d'aperçu ---------- */
+.preview-bar{
+  background:#fffbea;
+  border-bottom:1px solid #f2e2b8;
+  color:#6b5416;
+  font-size:12.5px;
+  text-align:center;
+  padding:6px 14px;
+}
+.preview-bar b{font-weight:600}
+
+/* ---------- Navigation ---------- */
+.topbar{
+  position:sticky;top:0;z-index:60;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:saturate(180%) blur(8px);
+  border-bottom:1px solid var(--border);
+}
+.topbar-inner{
+  max-width:1300px;margin:0 auto;padding:10px 22px;
+  display:flex;align-items:center;gap:18px;
+}
+.brand{display:flex;align-items:center;gap:11px;color:var(--text);font-weight:700;font-size:15.5px;white-space:nowrap}
+.brand:hover{text-decoration:none}
+.brand-mark{
+  width:34px;height:34px;flex:0 0 34px;border-radius:9px;
+  display:grid;place-items:center;
+  background:linear-gradient(150deg,var(--blue),#0e8aa8);
+  color:#fff;
+}
+.brand-mark svg{width:19px;height:19px}
+.brand-text b{color:var(--blue)}
+.brand-text span{color:var(--muted);font-weight:600}
+.nav{display:flex;align-items:center;gap:4px;margin-left:auto}
+.nav a{
+  color:var(--text-2);font-weight:600;font-size:14px;
+  padding:8px 13px;border-radius:8px;
+}
+.nav a:hover{background:var(--surface-2);color:var(--text);text-decoration:none}
+.nav a.active{background:var(--blue-soft);color:var(--blue-dark)}
+.nav-toggle{
+  display:none;margin-left:auto;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--text-2);
+}
+.topbar .btn{margin-left:6px}
+
+/* ---------- Boutons ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;justify-content:center;
+  border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);
+  font-size:13.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer;
+  transition:background .12s,border-color .12s,color .12s,box-shadow .12s;
+  white-space:nowrap;
+}
+.btn:hover{background:var(--surface-2);border-color:var(--muted);text-decoration:none}
+.btn svg{width:15px;height:15px}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-dark);border-color:var(--blue-dark)}
+.btn-secondary{background:#fff;border-color:var(--border-strong);color:var(--text-2)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn-ghost:hover{background:var(--surface-2);color:var(--text)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.btn-sm{padding:6px 10px;font-size:12.5px;border-radius:7px}
+
+/* ---------- Structure ---------- */
+main{max-width:1300px;margin:0 auto;padding:24px 22px 60px}
+.page{display:none;animation:fade .25s ease}
+.page.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.page-head{margin-bottom:20px}
+.page-head h1{font-size:24px}
+.page-head p{margin:6px 0 0;color:var(--muted);font-size:14px;max-width:70ch}
+.crumb{color:var(--muted);font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);
+}
+.card-head{
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.card-head h2{font-size:15px}
+.card-head .sub{color:var(--muted);font-size:12.5px;font-weight:500}
+.card-body{padding:18px}
+
+/* ---------- Statistiques ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.stat{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:15px 16px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
+}
+.stat::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue)}
+.stat.is-update::after{background:var(--cyan)}
+.stat .label{color:var(--muted);font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.stat .value{font-size:28px;font-weight:750;letter-spacing:-.02em;margin-top:7px;font-variant-numeric:tabular-nums}
+.stat .value small{font-size:14px;font-weight:600;color:var(--muted);margin-left:4px}
+.stat .meta{font-size:12px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:6px}
+.stat .meta .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.stat .value.is-date{font-size:20px}
+
+/* ---------- Grille graphiques ---------- */
+.charts{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin-bottom:16px}
+.chart-body{padding:16px 18px}
+.legend{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:14px;font-size:12.5px;color:var(--text-2)}
+.legend .item{display:flex;align-items:center;gap:7px}
+.legend .swatch{width:11px;height:11px;border-radius:3px;flex:0 0 11px}
+.legend .num{color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* barres horizontales */
+.bars{display:flex;flex-direction:column;gap:13px}
+.bar-row{display:grid;grid-template-columns:minmax(140px,42%) 1fr auto;align-items:center;gap:12px}
+.bar-label{font-size:13px;color:var(--text-2);font-weight:600;line-height:1.25}
+.bar-label small{display:block;color:var(--muted);font-weight:500;font-size:11.5px}
+.bar-track{background:var(--surface-2);border-radius:6px;height:14px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;background:var(--blue);min-width:3px;transition:width .4s}
+.bar-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);min-width:34px;text-align:right}
+.bar-row.is-empty .bar-fill{background:#c3ccdb}
+.bar-row.is-empty .bar-label{color:var(--muted)}
+
+/* donut */
+.donut-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.donut{position:relative;width:168px;height:168px;flex:0 0 auto}
+.donut svg{transform:rotate(-90deg)}
+.donut .center{
+  position:absolute;inset:0;display:grid;place-content:center;text-align:center;
+}
+.donut .center b{font-size:24px;font-weight:750;display:block;line-height:1.1}
+.donut .center span{font-size:11px;color:var(--muted);font-weight:600}
+
+/* timeline */
+.timeline-body{padding:14px 18px 8px}
+.timeline svg{width:100%;height:auto;display:block}
+.tl-note{color:var(--muted);font-size:12.5px;padding:0 18px 16px}
+
+/* ---------- À surveiller ---------- */
+.watch{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.watch-item{
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 13px;
+  background:var(--surface-2);display:flex;gap:12px;
+}
+.watch-score{
+  flex:0 0 46px;height:46px;border-radius:10px;display:grid;place-items:center;
+  font-weight:750;font-size:16px;background:var(--blue-soft);color:var(--blue-dark);
+  font-variant-numeric:tabular-nums;
+}
+.watch-score.hot{background:var(--red-soft);color:var(--red)}
+.watch-main{min-width:0}
+.watch-title{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.watch-meta{font-size:12px;color:var(--muted);margin-top:5px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.watch-meta .reprises{color:var(--cyan);font-weight:600}
+
+/* ---------- Note méthode ---------- */
+.method{
+  margin-top:16px;background:var(--surface);border:1px dashed var(--border-strong);
+  border-radius:var(--radius);padding:14px 18px;color:var(--text-2);font-size:13px;
+  display:flex;gap:12px;align-items:flex-start;
+}
+.method svg{width:18px;height:18px;flex:0 0 18px;color:var(--muted);margin-top:2px}
+.method b{color:var(--text)}
+
+/* ---------- Filtres ---------- */
+.filters{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm);
+}
+.filters-row{display:grid;grid-template-columns:1.6fr repeat(4,1fr);gap:10px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select{
+  width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:8px;
+  font-size:13.5px;background:#fff;color:var(--text);font-family:inherit;
+}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+.search-wrap{position:relative}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted)}
+.search-wrap input{padding-left:32px}
+.filters-foot{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--border);
+}
+.filters-actions{display:flex;gap:8px;flex-wrap:wrap}
+.result-count{font-size:13px;color:var(--muted)}
+.result-count b{color:var(--text);font-variant-numeric:tabular-nums}
+.active-filters{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;background:var(--blue-soft);color:var(--blue-dark);
+  font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;
+}
+.chip button{background:none;border:0;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:0}
+
+/* ---------- Tableau ---------- */
+.table-card{padding:0;overflow:hidden}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  position:sticky;top:0;z-index:2;background:var(--surface-2);
+  text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--muted);font-weight:700;padding:11px 12px;border-bottom:1px solid var(--border-strong);
+  white-space:nowrap;
+}
+thead th.sortable{cursor:pointer;user-select:none}
+thead th.sortable:hover{color:var(--text)}
+thead th .arrow{opacity:.35;font-size:10px;margin-left:3px}
+thead th[aria-sort="descending"] .arrow,thead th[aria-sort="ascending"] .arrow{opacity:1;color:var(--blue)}
+tbody td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+.col-date{white-space:nowrap;color:var(--text-2);font-variant-numeric:tabular-nums}
+.col-title{min-width:290px;max-width:420px}
+.col-title .t{font-weight:600;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.col-title .m{color:var(--muted);font-size:12px;margin-top:3px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.col-source{white-space:nowrap;color:var(--text-2)}
+.col-source small{display:block;color:var(--muted);font-size:11px}
+.num{font-variant-numeric:tabular-nums;text-align:center;color:var(--text-2)}
+.actions{display:flex;gap:6px;white-space:nowrap}
+.icon-btn{
+  display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;
+  border:1px solid var(--border-strong);background:#fff;color:var(--text-2);cursor:pointer;
+}
+.icon-btn:hover{background:var(--surface-2);color:var(--blue);border-color:var(--blue)}
+.icon-btn svg{width:15px;height:15px}
+
+/* ---------- Badges ---------- */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+  padding:3px 9px;border-radius:999px;white-space:nowrap;border:1px solid transparent;
+}
+.badge .d{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85}
+.badge-fiable{background:var(--green-soft);color:#0b7a55;border-color:#bfe7d8}
+.badge-verifier{background:var(--amber-soft);color:#9a5f05;border-color:#f2ddb6}
+.badge-ecarte{background:var(--red-soft);color:#b52f2f;border-color:#f3c9c9}
+.badge-none{background:#eef1f6;color:#5b6b82;border-color:#dbe2ec}
+.badge-theme{background:var(--cyan-soft);color:#0a6b83;border-color:#c3e6ee}
+.badge-theme-cls{background:#eef1f6;color:#5b6b82;border-color:#dbe2ec}
+.badge-valide{background:var(--green-soft);color:#0b7a55;border-color:#bfe7d8}
+.badge-attente{background:#eef1f6;color:#5b6b82;border-color:#dbe2ec}
+.st{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted)}
+.st .dot{width:6px;height:6px;border-radius:50%}
+.st-ok .dot{background:var(--green)}
+.st-lien_redirection .dot{background:var(--blue)}
+.st-echec_http .dot{background:var(--red)}
+.st-robots .dot{background:var(--amber)}
+.st-vide .dot,.st-non_traite .dot{background:#aab4c4}
+.score-pill{
+  display:inline-block;min-width:40px;text-align:center;font-weight:700;padding:3px 8px;
+  border-radius:7px;font-variant-numeric:tabular-nums;font-size:12.5px;
+}
+.score-hi{background:var(--green-soft);color:#0b7a55}
+.score-mid{background:var(--amber-soft);color:#9a5f05}
+.score-lo{background:var(--red-soft);color:#b52f2f}
+.score-na{background:#eef1f6;color:#5b6b82;font-weight:600;font-size:11.5px}
+
+.empty-state{padding:50px 20px;text-align:center;color:var(--muted)}
+.empty-state svg{width:38px;height:38px;opacity:.5;margin-bottom:10px}
+.empty-state h3{font-size:15px;margin-bottom:5px;color:var(--text-2)}
+
+/* ---------- Rapport ---------- */
+.report-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start}
+.report-hero{padding:26px}
+.report-hero .kicker{color:var(--blue);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em}
+.report-hero h1{font-size:26px;margin:8px 0 10px}
+.report-hero p{color:var(--text-2);max-width:60ch;margin:0 0 18px}
+.report-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.report-meta{margin-top:20px;padding-top:18px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.report-meta .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.report-meta .v{font-size:14px;font-weight:600;margin-top:4px}
+.status-note{
+  display:flex;gap:10px;align-items:flex-start;background:var(--amber-soft);
+  border:1px solid #f2ddb6;border-radius:var(--radius-sm);padding:12px 14px;color:#8a5605;font-size:13px;
+}
+.status-note svg{width:17px;height:17px;flex:0 0 17px;margin-top:1px}
+.info-box{
+  display:flex;gap:11px;align-items:flex-start;background:var(--surface-2);
+  border:1px solid var(--border);border-left:3px solid var(--cyan);
+  border-radius:var(--radius-sm);padding:13px 15px;color:var(--text-2);font-size:13px;
+}
+.info-box svg{width:18px;height:18px;flex:0 0 18px;color:var(--cyan);margin-top:1px}
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+.checklist li{display:flex;gap:10px;font-size:13.5px;color:var(--text-2)}
+.checklist svg{width:17px;height:17px;flex:0 0 17px;color:var(--green);margin-top:1px}
+
+/* ---------- Footer ---------- */
+.site-footer{border-top:1px solid var(--border);background:var(--surface)}
+.site-footer .inner{max-width:1300px;margin:0 auto;padding:26px 22px 34px}
+.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:26px}
+.site-footer h4{font-size:13px;margin-bottom:9px}
+.site-footer p{color:var(--muted);font-size:12.5px;margin:0 0 8px}
+.site-footer ul{list-style:none;margin:0;padding:0}
+.site-footer li{margin-bottom:6px}
+.site-footer li a{font-size:12.5px;color:var(--text-2)}
+.footer-bottom{
+  margin-top:22px;padding-top:16px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;color:var(--muted);font-size:12px;
+}
+
+/* ---------- Toast ---------- */
+.toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{
+  background:#14213a;color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:9px;
+  box-shadow:var(--shadow);display:flex;align-items:center;gap:9px;animation:rise .2s ease;
+}
+.toast svg{width:15px;height:15px;color:#5ee1b0}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1080px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .charts{grid-template-columns:1fr}
+  .report-grid{grid-template-columns:1fr}
+  .watch{grid-template-columns:1fr}
+  .filters-row{grid-template-columns:1fr 1fr 1fr}
+  .filters-row .field-search{grid-column:1/-1}
+}
+@media (max-width:760px){
+  main{padding:18px 14px 50px}
+  .topbar-inner{padding:10px 14px;flex-wrap:wrap;gap:10px}
+  .nav-toggle{display:inline-flex;align-items:center}
+  .nav{
+    order:3;width:100%;flex-direction:column;align-items:stretch;gap:2px;
+    max-height:0;overflow:hidden;transition:max-height .22s ease;
+  }
+  .nav.open{max-height:260px}
+  .nav a{padding:11px 12px}
+  .topbar .btn{order:2}
+  .brand{font-size:14.5px}
+  .stats{grid-template-columns:1fr 1fr;gap:10px}
+  .stat .value{font-size:23px}
+  .filters-row{grid-template-columns:1fr 1fr}
+  .footer-grid{grid-template-columns:1fr;gap:18px}
+  .report-meta{grid-template-columns:1fr 1fr}
+
+  /* Tableau -> cartes */
+  table,thead,tbody,tr,td{display:block}
+  thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  tbody tr{
+    border:1px solid var(--border);border-radius:var(--radius);margin:0 0 10px;padding:12px;
+    background:#fff;box-shadow:var(--shadow-sm);
+  }
+  tbody tr:hover{background:#fff}
+  tbody td{border:0;padding:4px 0;display:flex;gap:10px;align-items:baseline}
+  tbody td::before{
+    content:attr(data-label);flex:0 0 118px;color:var(--muted);font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.03em;padding-top:2px;
+  }
+  td.col-title{display:block;padding-bottom:8px}
+  td.col-title::before{display:none}
+  .col-title .m{-webkit-line-clamp:2}
+  .actions{margin-top:6px}
+  .donut-wrap{justify-content:center}
+  .bar-row{grid-template-columns:minmax(110px,40%) 1fr auto}
+}
+@media (max-width:430px){
+  .stats{grid-template-columns:1fr}
+  .filters-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="preview-bar">Aperçu — <b>données fictives de démonstration</b>. Le CSV public et le rapport PDF seront branchés sur les fichiers réels du projet.</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#/accueil" aria-label="Accueil — Veille IA et Cybersécurité">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.4 7.5 9.9 4.3-1.5 7.5-5.3 7.5-9.9v-6L12 2.5Z"/>
+          <path d="M9 12.2l2 2 4-4.4"/>
+        </svg>
+      </span>
+      <span class="brand-text">Veille <b>IA</b> &amp; Cybersécurité</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mainNav">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <nav class="nav" id="mainNav" aria-label="Navigation principale">
+      <a href="#/accueil" data-nav="accueil">Accueil</a>
+      <a href="#/veille" data-nav="veille">Veille</a>
+      <a href="#/rapport" data-nav="rapport">Rapport</a>
+    </nav>
+    <button class="btn btn-secondary" id="exportTop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      Exporter CSV
+    </button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= PAGE 1 : ACCUEIL / TABLEAU DE BORD ================= -->
+  <section class="page" id="page-accueil" aria-labelledby="title-accueil">
+    <div class="page-head">
+      <div class="crumb">Accueil / Tableau de bord</div>
+      <h1 id="title-accueil">Tableau de bord de la veille</h1>
+      <p>Vue d'ensemble du corpus collecté sur l'intelligence artificielle et la cybersécurité : volumes, tendances par sous-thème, fiabilité des sources et articles à surveiller.</p>
+    </div>
+
+    <div class="stats" id="statsGrid"></div>
+
+    <div class="charts">
+      <div class="card">
+        <div class="card-head">
+          <h2>Articles par sous-thème</h2>
+          <span class="sub">S1 – S5 + non classés</span>
+        </div>
+        <div class="chart-body">
+          <div class="bars" id="themeBars"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h2>Fiabilité (grille CRAAP)</h2>
+          <span class="sub">Score total / 50</span>
+        </div>
+        <div class="chart-body">
+          <div class="donut-wrap">
+            <div class="donut" id="craapDonut"></div>
+            <div class="legend" id="craapLegend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <h2>Chronologie des publications</h2>
+        <span class="sub">Articles collectés par semaine</span>
+      </div>
+      <div class="timeline-body"><div class="timeline" id="timeline"></div></div>
+      <div class="tl-note" id="timelineNote"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Articles à surveiller</h2>
+        <span class="sub">Triés par score de notabilité</span>
+      </div>
+      <div class="card-body">
+        <div class="watch" id="watchList"></div>
+      </div>
+    </div>
+
+    <div class="method">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+      <div><b>Méthode.</b> Les articles proviennent de flux RSS et de sources manuelles. Les scores CRAAP, sous-thèmes et validations sont ajoutés progressivement. Le texte complet des articles n'est pas publié.</div>
+    </div>
+  </section>
+
+  <!-- ================= PAGE 2 : VEILLE ================= -->
+  <section class="page" id="page-veille" aria-labelledby="title-veille">
+    <div class="page-head">
+      <div class="crumb">Veille</div>
+      <h1 id="title-veille">Articles collectés</h1>
+      <p>Recherchez, filtrez et triez les articles du corpus. Chaque ligne renvoie vers l'article original ; le texte complet n'est jamais publié sur ce site.</p>
+    </div>
+
+    <form class="filters" id="filters" role="search" onsubmit="return false">
+      <div class="filters-row">
+        <div class="field field-search">
+          <label for="fSearch">Recherche par mot-clé</label>
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="fSearch" placeholder="Titre, source, résumé…" autocomplete="off">
+          </div>
+        </div>
+        <div class="field">
+          <label for="fSource">Source</label>
+          <select id="fSource"><option value="">Toutes les sources</option></select>
+        </div>
+        <div class="field">
+          <label for="fLangue">Langue</label>
+          <select id="fLangue"><option value="">Toutes les langues</option></select>
+        </div>
+        <div class="field">
+          <label for="fTheme">Sous-thème</label>
+          <select id="fTheme"><option value="">Tous les sous-thèmes</option></select>
+        </div>
+        <div class="field">
+          <label for="fFiab">Fiabilité CRAAP</label>
+          <select id="fFiab"><option value="">Toutes les fiabilités</option></select>
+        </div>
+      </div>
+      <div class="active-filters" id="activeFilters"></div>
+      <div class="filters-foot">
+        <div class="result-count" id="resultCount">—</div>
+        <div class="filters-actions">
+          <div class="field" style="flex-direction:row;align-items:center;gap:8px">
+            <label for="fSort" style="margin:0">Trier par</label>
+            <select id="fSort" style="width:auto">
+              <option value="date-desc">Date (récent → ancien)</option>
+              <option value="date-asc">Date (ancien → récent)</option>
+              <option value="source-asc">Source (A → Z)</option>
+              <option value="craap-desc">Score CRAAP (élevé → faible)</option>
+              <option value="craap-asc">Score CRAAP (faible → élevé)</option>
+              <option value="notab-desc">Notabilité (élevée → faible)</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-secondary" id="resetFilters">Réinitialiser les filtres</button>
+          <button type="button" class="btn btn-primary" id="exportCsvPublic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Exporter CSV public
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <div class="card table-card">
+      <div class="table-wrap">
+        <table id="articlesTable">
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="date">Date<span class="arrow">▾</span></th>
+              <th>Titre</th>
+              <th class="sortable" data-sort="source">Source<span class="arrow">▾</span></th>
+              <th>Langue</th>
+              <th>Sous-thème</th>
+              <th class="sortable" data-sort="craap">Score CRAAP<span class="arrow">▾</span></th>
+              <th>Fiabilité</th>
+              <th class="num">Reprises</th>
+              <th>Validation</th>
+              <th>Lien</th>
+              <th>Référence</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="tableEmpty" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <h3>Aucun article ne correspond aux filtres</h3>
+        <p>Modifiez la recherche ou réinitialisez les filtres pour afficher de nouveau le corpus.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PAGE 3 : RAPPORT ================= -->
+  <section class="page" id="page-rapport" aria-labelledby="title-rapport">
+    <div class="page-head">
+      <div class="crumb">Rapport</div>
+      <h1 id="title-rapport">Rapport final</h1>
+      <p>Travail de groupe — synthèse figée du corpus et de la méthode.</p>
+    </div>
+
+    <div class="report-grid">
+      <div class="card report-hero">
+        <div class="kicker">Livrable final</div>
+        <h1>Rapport final</h1>
+        <p>Le rapport présente la méthode, l'analyse du corpus, les limites et les conclusions du travail de groupe.</p>
+        <div class="report-actions">
+          <button class="btn btn-primary" id="downloadReport" disabled aria-disabled="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            Télécharger le rapport PDF
+          </button>
+          <span class="badge badge-verifier">Rapport en préparation</span>
+        </div>
+        <div class="report-meta">
+          <div><div class="k">Date du rapport</div><div class="v" id="reportDate">—</div></div>
+          <div><div class="k">Statut</div><div class="v">En préparation</div></div>
+          <div><div class="k">Format</div><div class="v">PDF</div></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="status-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>
+          <div>Le PDF n'est pas encore disponible. Le bouton de téléchargement sera activé dès que le rapport sera déposé dans <code>rapport/</code>.</div>
+        </div>
+        <div class="info-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          <div>Ce site est un <b>outil de consultation</b> de la veille : le corpus évolue au fil des collectes. Le <b>rapport</b> est le rendu final figé, remis une seule fois. Les deux ne jouent pas le même rôle.</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Contenu attendu</h2></div>
+          <div class="card-body">
+            <ul class="checklist">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Méthode de collecte et grille CRAAP</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Analyse du corpus et sous-thèmes</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Limites de la veille</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Conclusions du travail de groupe</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="inner">
+    <div class="footer-grid">
+      <div>
+        <h4>Veille IA &amp; Cybersécurité</h4>
+        <p>Outil de consultation d'une veille universitaire sur l'intelligence artificielle et la cybersécurité. Corpus collecté automatiquement, scoré et validé progressivement.</p>
+        <p><b>Méthode :</b> les articles proviennent de flux RSS et de sources manuelles. Les scores CRAAP, sous-thèmes et validations sont ajoutés progressivement. Le texte complet des articles n'est pas publié.</p>
+      </div>
+      <div>
+        <h4>Pages</h4>
+        <ul>
+          <li><a href="#/accueil">Accueil / Tableau de bord</a></li>
+          <li><a href="#/veille">Veille</a></li>
+          <li><a href="#/rapport">Rapport</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Ressources</h4>
+        <ul>
+          <li><a href="#" id="footerExport">Export CSV public</a></li>
+          <li><a href="#/rapport">Rapport PDF</a></li>
+          <li><span style="font-size:12.5px;color:var(--muted)">Dernière mise à jour : <span id="footerUpdate">—</span></span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 — Travail de groupe universitaire. Données affichées : échantillon de démonstration.</span>
+      <span>Texte intégral des articles non publié · Liens vers les sources originales</span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<script>
+/* ============================================================================
+   1. DONNÉES FICTIVES — alignées sur le schéma CSV du projet (26 colonnes)
+   ========================================================================== */
+const THEMES = {
+  S1: {code:"S1", label:"IA offensive & menaces émergentes"},
+  S2: {code:"S2", label:"Sécurité des systèmes d'IA (LLM, agents)"},
+  S3: {code:"S3", label:"IA & défense (SOC, détection, réponse)"},
+  S4: {code:"S4", label:"Deepfakes, fraude & désinformation"},
+  S5: {code:"S5", label:"Réglementation, éthique & gouvernance"}
+};
+
+const SOURCES = [
+  {name:"The Hacker News", domain:"thehackernews.com", lang:"en", weight:14},
+  {name:"BleepingComputer", domain:"bleepingcomputer.com", lang:"en", weight:10},
+  {name:"CERT-FR", domain:"cert.ssi.gouv.fr", lang:"fr", weight:6},
+  {name:"ANSSI", domain:"cyber.gouv.fr", lang:"fr", weight:5},
+  {name:"Microsoft Security Blog", domain:"microsoft.com", lang:"en", weight:8},
+  {name:"arXiv cs.CR", domain:"arxiv.org", lang:"en", weight:9},
+  {name:"Anthropic", domain:"anthropic.com", lang:"en", weight:5},
+  {name:"Reuters", domain:"reuters.com", lang:"en", weight:7},
+  {name:"LeMagIT", domain:"lemagit.fr", lang:"fr", weight:7},
+  {name:"ZDNet", domain:"zdnet.fr", lang:"fr", weight:6}
+];
+
+const STATUTS = ["ok","ok","ok","ok","ok","ok","ok","lien_redirection","echec_http","robots","vide","non_traite"];
+const STATUT_LABEL = {ok:"ok", lien_redirection:"lien_redirection", echec_http:"echec_http", robots:"robots", vide:"vide", non_traite:"non traité"};
+
+/* --- Générateur pseudo-aléatoire déterministe --- */
+let _seed = 20261013;
+function rnd(){ _seed = (_seed * 1664525 + 1013904223) >>> 0; return _seed / 4294967296; }
+function pick(a){ return a[Math.floor(rnd()*a.length)]; }
+function int(a,b){ return a + Math.floor(rnd()*(b-a+1)); }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+/* --- Vocabulaire pour composer des titres plausibles --- */
+const V = {
+  ai:["ChatGPT","Claude","Gemini","Copilot","Llama","Mistral","GPT-5","DeepSeek","Qwen"],
+  aiFr:["ChatGPT","Claude","Gemini","Copilot","Mistral","GPT-5"],
+  threat:["prompt injection","jailbreak","data poisoning","adversarial prompts","model theft","deepfake","promptware","LLM worm","agent hijacking","insecure output handling"],
+  threatFr:["injection de prompt","jailbreak","empoisonnement de données","vol de modèle","deepfake","détournement d'agent"],
+  actor:["ShinyHunters","Scattered Spider","LockBit","APT29","CyberXero","a ransomware crew","a nation-state group","an unknown actor"],
+  actorFr:["ShinyHunters","APT29","LockBit","un groupe cybercriminel","un acteur étatique"],
+  target:["enterprise SSO","Kubernetes clusters","financial institutions","healthcare providers","government agencies","WordPress sites","API gateways","CI/CD pipelines","cloud environments","browser extensions","e-commerce platforms","telecom operators"],
+  targetFr:["les infrastructures critiques","les hôpitaux","les banques","les collectivités","les PME industrielles","les services de l'État"],
+  product:["LMCache","Ollama","vLLM","LangChain","Ray","PyTorch","Hugging Face Transformers","Milvus","Docker AI","Kubeflow"],
+  action:["run code remotely","leak credentials","bypass MFA","exfiltrate data","escalate privileges","disable security controls","move laterally","harvest API keys","deploy miners"],
+  actionFr:["exécuter du code à distance","exfiltrer des données","contourner la MFA","élever des privilèges","déployer des mineurs"],
+  domain:["the SOC","incident response","threat hunting","identity security","cloud security","the software supply chain","vulnerability management","DevSecOps"],
+  domainFr:["les SOC","la réponse à incident","la gestion des identités","la sécurité du cloud"],
+  vendor:["Anthropic","OpenAI","Google","Microsoft","Cloudflare","CrowdStrike","Palo Alto Networks","IBM","Cisco","SentinelOne"]
+};
+
+const TPL_EN = [
+  ()=>`${cap(pick(V.actor))} uses ${pick(V.ai)} to ${pick(V.action)} from ${pick(V.target)}`,
+  ()=>`New ${pick(V.threat)} campaign targets ${pick(V.target)} via ${pick(V.ai)}`,
+  ()=>`Critical flaw in ${pick(V.product)} lets attackers ${pick(V.action)}`,
+  ()=>`${pick(V.vendor)} patches a critical ${pick(V.product)} vulnerability`,
+  ()=>`Study: ${pick(V.ai)} agents can ${pick(V.action)} without human oversight`,
+  ()=>`How ${pick(V.ai)} is reshaping ${pick(V.domain)}`,
+  ()=>`${pick(V.vendor)} launches an AI tool to protect ${pick(V.target)}`,
+  ()=>`Researchers demonstrate ${pick(V.threat)} against ${pick(V.ai)}`,
+  ()=>`CISA warns of ${pick(V.threat)} attacks exploiting ${pick(V.product)}`,
+  ()=>`The rise of ${pick(V.threat)}: what ${pick(V.domain)} teams must know`,
+  ()=>`${pick(V.vendor)} expands reduced-safeguard AI access for vetted security teams`,
+  ()=>`PoC exploit released for ${pick(V.product)} flaw enabling remote code execution`
+];
+const TPL_FR = [
+  ()=>`${cap(pick(V.actorFr))} exploite ${pick(V.aiFr)} pour ${pick(V.actionFr)}`,
+  ()=>`Nouvelle campagne de ${pick(V.threatFr)} ciblant ${pick(V.targetFr)}`,
+  ()=>`Faille critique dans ${pick(V.product)} : les attaquants peuvent ${pick(V.actionFr)}`,
+  ()=>`${pick(V.vendor)} corrige une vulnérabilité critique dans ${pick(V.product)}`,
+  ()=>`Étude : les agents ${pick(V.aiFr)} peuvent ${pick(V.actionFr)} sans supervision`,
+  ()=>`Comment ${pick(V.aiFr)} transforme ${pick(V.domainFr)}`,
+  ()=>`L'ANSSI alerte sur une hausse des attaques par ${pick(V.threatFr)}`,
+  ()=>`Recherche : ${pick(V.threatFr)} contourne les garde-fous de ${pick(V.aiFr)}`
+];
+
+const DATE_REF = new Date(Date.UTC(2026,9,13)); // 2026-10-13
+function isoDate(d, addDays){
+  const x = new Date(d.getTime());
+  if(addDays) x.setUTCDate(x.getUTCDate()+addDays);
+  return x.toISOString().slice(0,10);
+}
+function frDate(s){
+  if(!s) return "—";
+  const [y,m,d]=s.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function weightedSource(){
+  const total = SOURCES.reduce((s,x)=>s+x.weight,0);
+  let r = rnd()*total;
+  for(const s of SOURCES){ if((r-=s.weight)<=0) return s; }
+  return SOURCES[0];
+}
+
+function buildDataset(){
+  const rows=[];
+  for(let i=1;i<=201;i++){
+    const src = weightedSource();
+    let langue = src.lang;
+    if(rnd()<0.05) langue = "";                        // langue non détectée
+
+    const titre = (langue==="fr" ? pick(TPL_FR)() : pick(TPL_EN)());
+
+    // sous-thème : 0 à 2, parfois aucun -> "À classer"
+    let themes=[];
+    if(rnd()>0.15){
+      const keys=Object.keys(THEMES);
+      themes.push(pick(keys));
+      if(rnd()<0.25){ const k2=pick(keys); if(!themes.includes(k2)) themes.push(k2); }
+    }
+    const primary = themes[0] || "";
+
+    // CRAAP : évalué pour ~2/3 des articles
+    let crit={actualite:"",pertinence:"",autorite:"",exactitude:"",objectif:"",total:""};
+    if(rnd()<0.68){
+      const base = int(5,10);
+      crit.actualite = String(base);
+      crit.pertinence = String(Math.max(3, base - int(0,2)));
+      crit.autorite = String(Math.max(3, base - int(0,3)));
+      crit.exactitude = String(Math.max(3, base - int(0,2)));
+      crit.objectif = String(Math.max(3, base - int(0,3)));
+      crit.total = String([crit.actualite,crit.pertinence,crit.autorite,crit.exactitude,crit.objectif]
+        .reduce((s,v)=>s+Number(v),0));
+    }
+
+    // extraction
+    const statut = pick(STATUTS);
+    const mois = int(0,2);
+    const jour = int(0,30);
+    const date = isoDate(DATE_REF, -(mois*30 + jour) - int(0,1));
+
+    const resume = (statut==="vide"||statut==="non_traite"||statut==="echec_http")
+      ? ""
+      : (langue==="fr"
+        ? cap(pick(V.threatFr))+" : la campagne abuse "+pick(V.aiFr)+" pour "+pick(V.actionFr)+"."
+        : cap(pick(V.threat))+" allows attackers to "+pick(V.action)+" by abusing "+pick(V.ai)+".");
+
+    const reprises = [0,0,1,1,1,2,2,3,4,5][int(0,9)];
+    const notab = rnd()<0.72 ? int(20,98) : "";
+    const valide = rnd()<0.55 ? "oui" : "";
+
+    rows.push({
+      id:String(i).padStart(4,"0"),
+      date_publication:date,
+      titre,
+      auteur:"",
+      lien:"https://"+src.domain+"/"+date.replace(/-/g,"/")+"/"+i,
+      source:src.name,
+      source_domain:src.domain,
+      langue,
+      resume,
+      statut_extraction:statut,
+      craap_total:crit.total,
+      craap_actualite:crit.actualite,
+      craap_pertinence:crit.pertinence,
+      craap_autorite:crit.autorite,
+      craap_exactitude:crit.exactitude,
+      craap_objectif:crit.objectif,
+      s1:themes[0]||"", s2:themes[1]||"", s3:"", s4:"", s5:"",
+      theme:primary,
+      nb_sources_reprise:reprises,
+      score_notabilite:notab,
+      valide_manuel:valide,
+      relecteur:""
+    });
+  }
+  rows.sort((a,b)=> b.date_publication.localeCompare(a.date_publication) || a.id.localeCompare(b.id));
+  return rows;
+}
+
+const DATA = buildDataset();
+
+/* --- Dérivés --- */
+function fiabilite(r){
+  if(r.craap_total==="") return {key:"none", label:"Non évalué", cls:"badge-none"};
+  const t=Number(r.craap_total);
+  if(t>=40) return {key:"fiable", label:"Fiable", cls:"badge-fiable"};
+  if(t>=28) return {key:"verifier", label:"À vérifier", cls:"badge-verifier"};
+  return {key:"ecarte", label:"Écarté", cls:"badge-ecarte"};
+}
+function themeBadge(r){
+  if(!r.theme) return '<span class="badge badge-theme-cls">À classer</span>';
+  const t=THEMES[r.theme];
+  return `<span class="badge badge-theme" title="${t.label}">${t.code}</span>`;
+}
+function validationBadge(r){
+  return r.valide_manuel==="oui"
+    ? '<span class="badge badge-valide">Validé</span>'
+    : '<span class="badge badge-attente">En attente</span>';
+}
+function scorePill(total){
+  if(total==="") return '<span class="score-pill score-na">Non évalué</span>';
+  const t=Number(total);
+  const cls = t>=40?"score-hi":t>=28?"score-mid":"score-lo";
+  return `<span class="score-pill ${cls}">${t}<span style="opacity:.5;font-weight:600">/50</span></span>`;
+}
+function lastUpdate(){
+  return DATA.reduce((m,r)=> r.date_publication>m ? r.date_publication : m, "");
+}
+
+/* ============================================================================
+   2. TABLEAU DE BORD
+   ========================================================================== */
+function renderStats(){
+  const collectes = DATA.length;
+  const sources = SOURCES.length;
+  const evalues = DATA.filter(r=>r.craap_total!=="").length;
+  const maj = lastUpdate();
+  const cards = [
+    {label:"Articles collectés", value:collectes, meta:`${DATA.filter(r=>r.langue==="en").length} en anglais · ${DATA.filter(r=>r.langue==="fr").length} en français`},
+    {label:"Sources suivies", value:sources, meta:"Flux RSS + sources manuelles"},
+    {label:"Articles évalués (CRAAP)", value:evalues, meta:`${Math.round(evalues/collectes*100)} % du corpus`, dot:true},
+    {label:"Dernière mise à jour", value:frDate(maj), isDate:true, cls:"is-update", meta:"Collecte automatique"}
+  ];
+  document.getElementById("statsGrid").innerHTML = cards.map(c=>`
+    <div class="stat ${c.cls||""}">
+      <div class="label">${c.label}</div>
+      <div class="value ${c.isDate?"is-date":""}">${c.value}</div>
+      <div class="meta">${c.dot?'<span class="dot"></span>':''}${c.meta}</div>
+    </div>`).join("");
+  document.getElementById("footerUpdate").textContent = frDate(maj);
+}
+
+function renderThemeBars(){
+  const counts={};
+  Object.keys(THEMES).forEach(k=>counts[k]=0);
+  counts.none=0;
+  DATA.forEach(r=>{ if(r.theme && counts[r.theme]!==undefined) counts[r.theme]++; else counts.none++; });
+  const max = Math.max(...Object.values(counts),1);
+  const rows = Object.keys(THEMES).map(k=>(
+    {label:THEMES[k].code, sub:THEMES[k].label, n:counts[k], empty:false}
+  ));
+  rows.push({label:"À classer", sub:"Sous-thème non attribué", n:counts.none, empty:true});
+  document.getElementById("themeBars").innerHTML = rows.map(r=>`
+    <div class="bar-row ${r.empty?"is-empty":""}">
+      <div class="bar-label">${r.label}<small>${r.sub}</small></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(r.n/max*100)}%"></div></div>
+      <div class="bar-val">${r.n}</div>
+    </div>`).join("");
+}
+
+function renderDonut(){
+  const buckets = {fiable:0, verifier:0, ecarte:0, none:0};
+  DATA.forEach(r=>buckets[fiabilite(r).key]++);
+  const order=[
+    {key:"fiable", label:"Fiable", color:"#0f9d6e"},
+    {key:"verifier", label:"À vérifier", color:"#c98a12"},
+    {key:"ecarte", label:"Écarté", color:"#d14343"},
+    {key:"none", label:"Non évalué", color:"#c3ccdb"}
+  ];
+  const total = DATA.length;
+  const R=74, C=2*Math.PI*R;
+  let offset=0;
+  let segs="";
+  order.forEach(o=>{
+    const n=buckets[o.key];
+    const len = total? n/total*C : 0;
+    if(len>0){
+      segs += `<circle cx="84" cy="84" r="${R}" fill="none" stroke="${o.color}" stroke-width="20"
+        stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}"
+        stroke-dashoffset="${(-offset).toFixed(2)}"/>`;
+    }
+    offset+=len;
+  });
+  const evalues = buckets.fiable+buckets.verifier+buckets.ecarte;
+  document.getElementById("craapDonut").innerHTML = `
+    <svg viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="Répartition par fiabilité CRAAP">
+      <circle cx="84" cy="84" r="${R}" fill="none" stroke="#eef1f6" stroke-width="20"/>
+      ${segs}
+    </svg>
+    <div class="center"><b>${Math.round(evalues/total*100)}%</b><span>évalués</span></div>`;
+  document.getElementById("craapLegend").innerHTML = order.map(o=>`
+    <div class="item"><span class="swatch" style="background:${o.color}"></span>${o.label}
+      <span class="num">${buckets[o.key]}</span></div>`).join("");
+}
+
+function renderTimeline(){
+  // 13 semaines glissantes jusqu'à la date de référence
+  const weeks=13, W=680, H=200, padL=34, padR=12, padT=18, padB=28;
+  const buckets=new Array(weeks).fill(0);
+  const ref = DATE_REF;
+  DATA.forEach(r=>{
+    const d=new Date(r.date_publication+"T00:00:00Z");
+    const diff=Math.floor((ref-d)/86400000);
+    const w=Math.floor(diff/7);
+    if(w>=0 && w<weeks) buckets[weeks-1-w]++;
+  });
+  const max=Math.max(...buckets,1);
+  const innerW=W-padL-padR, innerH=H-padT-padB;
+  const x=i=> padL + (weeks===1?0:i/(weeks-1))*innerW;
+  const y=v=> padT + innerH - (v/max)*innerH;
+  const pts=buckets.map((v,i)=>[x(i),y(v)]);
+  const line=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+  const area=`M${x(0).toFixed(1)} ${(padT+innerH).toFixed(1)} `+pts.map(p=>"L"+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ")+
+    ` L${x(weeks-1).toFixed(1)} ${(padT+innerH).toFixed(1)} Z`;
+  const grid=[0,.25,.5,.75,1].map(f=>{
+    const yy=padT+innerH*f;
+    return `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#eef1f6" stroke-width="1"/>
+            <text x="${padL-8}" y="${yy+4}" text-anchor="end" font-size="10" fill="#8794a8">${Math.round(max*(1-f))}</text>`;
+  }).join("");
+  const dots=pts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2" fill="#fff" stroke="#2563eb" stroke-width="2"><title>${buckets[i]} articles</title></circle>`).join("");
+  const labels=pts.map((p,i)=> (i%3===0)? `<text x="${p[0].toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#8794a8">S${i+1}</text>`:"").join("");
+  document.getElementById("timeline").innerHTML=`
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Chronologie des publications par semaine">
+      ${grid}
+      <path d="${area}" fill="rgba(37,99,235,.10)"/>
+      <path d="${line}" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}${labels}
+    </svg>`;
+  document.getElementById("timelineNote").textContent =
+    `${DATA.length} articles répartis sur ${weeks} semaines · pic hebdomadaire : ${max} articles`;
+}
+
+function renderWatch(){
+  const top = DATA.filter(r=>r.score_notabilite!=="")
+    .sort((a,b)=> (Number(b.score_notabilite)+Number(b.nb_sources_reprise)*3) - (Number(a.score_notabilite)+Number(a.nb_sources_reprise)*3))
+    .slice(0,4);
+  const host=document.getElementById("watchList");
+  if(!top.length){ host.innerHTML=`<p style="color:var(--muted)">Données en attente.</p>`; return; }
+  host.innerHTML = top.map(r=>{
+    const hot = r.nb_sources_reprise>=3;
+    return `<div class="watch-item">
+      <div class="watch-score ${hot?"hot":""}" title="Score de notabilité">${r.score_notabilite}</div>
+      <div class="watch-main">
+        <div class="watch-title">${escapeHtml(r.titre)}</div>
+        <div class="watch-meta">
+          <span>${r.source}</span><span>·</span><span>${frDate(r.date_publication)}</span>
+          <span class="reprises">↻ ${r.nb_sources_reprise} reprise${r.nb_sources_reprise>1?"s":""}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ============================================================================
+   3. VEILLE — filtres, tri, tableau
+   ========================================================================== */
+const state = { q:"", source:"", langue:"", theme:"", fiab:"", sort:"date-desc" };
+
+function fillSelects(){
+  const s=document.getElementById("fSource");
+  [...new Set(DATA.map(r=>r.source))].sort().forEach(v=>s.add(new Option(v,v)));
+  const l=document.getElementById("fLangue");
+  l.add(new Option("Anglais (en)","en")); l.add(new Option("Français (fr)","fr"));
+  if(DATA.some(r=>r.langue==="")) l.add(new Option("Non détectée","__none"));
+  const t=document.getElementById("fTheme");
+  Object.values(THEMES).forEach(o=>t.add(new Option(o.code+" — "+o.label,o.code)));
+  t.add(new Option("À classer (non attribué)","__none"));
+  const f=document.getElementById("fFiab");
+  [["fiable","Fiable"],["verifier","À vérifier"],["ecarte","Écarté"],["none","Non évalué"]]
+    .forEach(([v,lab])=>f.add(new Option(lab,v)));
+}
+
+function filtered(){
+  let rows=DATA.filter(r=>{
+    if(state.source && r.source!==state.source) return false;
+    if(state.langue){
+      if(state.langue==="__none"){ if(r.langue!=="") return false; }
+      else if(r.langue!==state.langue) return false;
+    }
+    if(state.theme){
+      if(state.theme==="__none"){ if(r.theme) return false; }
+      else if(r.theme!==state.theme) return false;
+    }
+    if(state.fiab){ if(fiabilite(r).key!==state.fiab) return false; }
+    if(state.q){
+      const q=state.q.toLowerCase();
+      const hay=(r.titre+" "+r.source+" "+r.resume).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  const cmp={
+    "date-desc":(a,b)=> b.date_publication.localeCompare(a.date_publication),
+    "date-asc": (a,b)=> a.date_publication.localeCompare(b.date_publication),
+    "source-asc":(a,b)=> a.source.localeCompare(b.source) || b.date_publication.localeCompare(a.date_publication),
+    "craap-desc":(a,b)=> (b.craap_total===""?-1:Number(b.craap_total)) - (a.craap_total===""?-1:Number(a.craap_total)),
+    "craap-asc": (a,b)=> (a.craap_total===""?999:Number(a.craap_total)) - (b.craap_total===""?999:Number(b.craap_total)),
+    "notab-desc":(a,b)=> (b.score_notabilite===""?-1:Number(b.score_notabilite)) - (a.score_notabilite===""?-1:Number(a.score_notabilite))
+  };
+  rows.sort(cmp[state.sort] || cmp["date-desc"]);
+  return rows;
+}
+
+function renderTable(){
+  const rows=filtered();
+  const tbody=document.getElementById("tableBody");
+  document.getElementById("tableEmpty").hidden = rows.length>0;
+  tbody.innerHTML = rows.map(r=>{
+    const f=fiabilite(r);
+    const st=STATUT_LABEL[r.statut_extraction]||r.statut_extraction;
+    const lang = r.langue==="en"?"EN":r.langue==="fr"?"FR":'<span style="color:var(--muted)">—</span>';
+    return `<tr>
+      <td class="col-date" data-label="Date">${frDate(r.date_publication)}
+        <div class="st st-${r.statut_extraction}"><span class="dot"></span>${st}</div></td>
+      <td class="col-title">
+        <div class="t">${escapeHtml(r.titre)}</div>
+        ${r.resume?`<div class="m">${escapeHtml(r.resume)}</div>`:`<div class="m" style="color:var(--muted)">Résumé en attente</div>`}
+      </td>
+      <td class="col-source" data-label="Source">${r.source}<small>${r.source_domain}</small></td>
+      <td data-label="Langue">${lang}</td>
+      <td data-label="Sous-thème">${themeBadge(r)}</td>
+      <td data-label="Score CRAAP">${scorePill(r.craap_total)}</td>
+      <td data-label="Fiabilité"><span class="badge ${f.cls}"><span class="d"></span>${f.label}</span></td>
+      <td class="num" data-label="Reprises">${r.nb_sources_reprise}</td>
+      <td data-label="Validation">${validationBadge(r)}</td>
+      <td data-label="Lien">
+        <a class="icon-btn" href="${r.lien}" target="_blank" rel="noopener noreferrer" title="Ouvrir l'article original" aria-label="Ouvrir l'article original">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+        </a>
+      </td>
+      <td data-label="Référence">
+        <button class="icon-btn" data-copy="${r.id}" title="Copier la référence">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </button>
+      </td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("resultCount").innerHTML =
+    `<b>${rows.length}</b> article${rows.length>1?"s":""} affiché${rows.length>1?"s":""} sur ${DATA.length}`;
+  renderActiveFilters();
+}
+
+function renderActiveFilters(){
+  const map={source:"Source",langue:"Langue",theme:"Sous-thème",fiab:"Fiabilité"};
+  const cont=document.getElementById("activeFilters");
+  const chips=[];
+  if(state.q) chips.push(["q",`« ${state.q} »`]);
+  ["source","langue","theme","fiab"].forEach(k=>{
+    if(state[k]) chips.push([k,`${map[k]} : ${labelFor(k,state[k])}`]);
+  });
+  cont.innerHTML = chips.map(([k,lab])=>
+    `<span class="chip">${escapeHtml(lab)}<button type="button" data-clear="${k}" aria-label="Retirer le filtre">×</button></span>`
+  ).join("");
+}
+function labelFor(k,v){
+  if(k==="langue") return v==="__none"?"Non détectée":v.toUpperCase();
+  if(k==="theme") return v==="__none"?"À classer":v;
+  if(k==="fiab") return {fiable:"Fiable",verifier:"À vérifier",ecarte:"Écarté",none:"Non évalué"}[v];
+  return v;
+}
+
+/* ============================================================================
+   4. EXPORT CSV PUBLIC (sans texte complet)
+   ========================================================================== */
+const PUBLIC_COLS=[
+  ["id","id"],["date_publication","date_publication"],["titre","titre"],
+  ["source","source"],["langue","langue"],
+  ["sous_theme","__theme"],["score_craap","craap_total"],["fiabilite","__fiab"],
+  ["nb_sources_reprise","nb_sources_reprise"],["statut_validation","__valide"],["lien","lien"]
+];
+function csvCell(v){ const s=String(v??""); return /[",\n;]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+function toCsv(rows){
+  const head=PUBLIC_COLS.map(c=>c[0]).join(",");
+  const body=rows.map(r=>PUBLIC_COLS.map(([,src])=>{
+    let v;
+    if(src==="__theme") v = r.theme? (THEMES[r.theme].code+" — "+THEMES[r.theme].label) : "À classer";
+    else if(src==="__fiab") v = fiabilite(r).label;
+    else if(src==="__valide") v = r.valide_manuel==="oui"?"Validé":"En attente";
+    else v = r[src];
+    return csvCell(v);
+  }).join(",")).join("\n");
+  return "\ufeff"+head+"\n"+body;
+}
+function downloadCsv(rows, suffix){
+  const blob=new Blob([toCsv(rows)],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`veille_ia_cyber_public_${suffix||lastUpdate()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+
+/* ============================================================================
+   5. RÉFÉRENCE / COPIE
+   ========================================================================== */
+function reference(r){
+  const auteur = r.auteur || r.source;
+  return `${auteur}. (${r.date_publication}). ${r.titre}. ${r.source}. ${r.lien}`;
+}
+async function copyReference(id){
+  const r=DATA.find(x=>x.id===id); if(!r) return;
+  const txt=reference(r);
+  try{
+    if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(txt); }
+    else { const ta=document.createElement("textarea"); ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+    toast("Référence copiée dans le presse-papiers");
+  }catch(e){ toast("Impossible de copier automatiquement"); }
+}
+
+/* ============================================================================
+   6. ROUTAGE & ÉVÉNEMENTS
+   ========================================================================== */
+const PAGES=["accueil","veille","rapport"];
+function route(){
+  const h=(location.hash||"#/accueil").replace("#/","");
+  const p=PAGES.includes(h)?h:"accueil";
+  document.querySelectorAll(".page").forEach(s=>s.classList.toggle("active", s.id==="page-"+p));
+  document.querySelectorAll("[data-nav]").forEach(a=>a.classList.toggle("active", a.dataset.nav===p));
+  document.title = {accueil:"Veille IA & Cybersécurité — Tableau de bord", veille:"Veille IA & Cybersécurité — Articles", rapport:"Veille IA & Cybersécurité — Rapport"}[p];
+  document.getElementById("mainNav").classList.remove("open");
+  document.getElementById("navToggle").setAttribute("aria-expanded","false");
+  window.scrollTo({top:0,behavior:"instant" in window ? "instant":"auto"});
+}
+
+function escapeHtml(s){
+  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function toast(msg){
+  const wrap=document.getElementById("toastWrap");
+  const t=document.createElement("div");
+  t.className="toast";
+  t.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>${escapeHtml(msg)}`;
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.style.transition="opacity .3s"; t.style.opacity="0"; setTimeout(()=>t.remove(),320); }, 2200);
+}
+
+/* --- Filtres --- */
+function bindFilters(){
+  document.getElementById("fSearch").addEventListener("input", e=>{ state.q=e.target.value.trim(); renderTable(); });
+  const bind=(id,key)=> document.getElementById(id).addEventListener("change", e=>{ state[key]=e.target.value; renderTable(); });
+  bind("fSource","source"); bind("fLangue","langue"); bind("fTheme","theme"); bind("fFiab","fiab");
+  document.getElementById("fSort").addEventListener("change", e=>{ state.sort=e.target.value; renderTable(); });
+
+  document.getElementById("resetFilters").addEventListener("click", ()=>{
+    Object.assign(state,{q:"",source:"",langue:"",theme:"",fiab:"",sort:"date-desc"});
+    document.getElementById("filters").reset();
+    renderTable(); toast("Filtres réinitialisés");
+  });
+
+  document.getElementById("activeFilters").addEventListener("click", e=>{
+    const b=e.target.closest("[data-clear]"); if(!b) return;
+    const k=b.dataset.clear;
+    if(k==="q"){ state.q=""; document.getElementById("fSearch").value=""; }
+    else { state[k]=""; document.getElementById({source:"fSource",langue:"fLangue",theme:"fTheme",fiab:"fFiab"}[k]).value=""; }
+    renderTable();
+  });
+
+  // tri via en-têtes
+  document.querySelectorAll("thead th.sortable").forEach(th=>{
+    th.addEventListener("click", ()=>{
+      const map={date: state.sort==="date-desc"?"date-asc":"date-desc",
+                 source:"source-asc",
+                 craap: state.sort==="craap-desc"?"craap-asc":"craap-desc"};
+      state.sort=map[th.dataset.sort];
+      document.getElementById("fSort").value=state.sort;
+      document.querySelectorAll("thead th.sortable").forEach(x=>x.removeAttribute("aria-sort"));
+      th.setAttribute("aria-sort", state.sort.endsWith("asc")?"ascending":"descending");
+      renderTable();
+    });
+  });
+
+  // copier référence
+  document.getElementById("tableBody").addEventListener("click", e=>{
+    const b=e.target.closest("[data-copy]"); if(b) copyReference(b.dataset.copy);
+  });
+
+  // exports
+  document.getElementById("exportCsvPublic").addEventListener("click", ()=>{
+    const rows=filtered(); downloadCsv(rows, "filtre_"+lastUpdate()); toast(`CSV public exporté (${rows.length} lignes)`);
+  });
+  const exportAll=()=>{ downloadCsv(DATA, lastUpdate()); toast(`CSV public exporté (${DATA.length} lignes)`); };
+  document.getElementById("exportTop").addEventListener("click", exportAll);
+  document.getElementById("footerExport").addEventListener("click", e=>{ e.preventDefault(); exportAll(); });
+}
+
+/* --- Nav mobile --- */
+function bindNav(){
+  const t=document.getElementById("navToggle"), n=document.getElementById("mainNav");
+  t.addEventListener("click", ()=>{
+    const open=n.classList.toggle("open");
+    t.setAttribute("aria-expanded", open?"true":"false");
+  });
+}
+
+/* --- Rapport --- */
+const RAPPORT_DISPONIBLE=false; // passer à true quand le PDF est déposé dans rapport/
+function initReport(){
+  const btn=document.getElementById("downloadReport");
+  const statut=document.querySelector(".report-actions .badge");
+  if(RAPPORT_DISPONIBLE){
+    btn.disabled=false; btn.removeAttribute("aria-disabled");
+    btn.addEventListener("click", ()=>{ window.location.href="rapport/rapport-final.pdf"; });
+    statut.className="badge badge-fiable"; statut.textContent="Disponible";
+    document.querySelector(".status-note").style.display="none";
+  }
+  document.getElementById("reportDate").textContent = frDate(lastUpdate());
+}
+
+/* --- Boot --- */
+renderStats();
+renderThemeBars();
+renderDonut();
+renderTimeline();
+renderWatch();
+fillSelects();
+bindFilters();
+bindNav();
+initReport();
+renderTable();
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
