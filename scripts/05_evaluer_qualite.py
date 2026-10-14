@@ -21,8 +21,12 @@ Usage : python scripts/05_evaluer_qualite.py [--csv data/echantillon.csv]
 import argparse
 import csv
 import re
+import sys
 from collections import Counter
 from datetime import datetime
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import yaml
 
@@ -106,7 +110,9 @@ def remplir_echantillon(chemin, reference):
     print("Étapes suivantes : 02_extraction.py puis 04_qualite.py avec --csv", chemin)
 
 
-def niveau(total):
+def niveau(total, pertinence=None):
+    if pertinence is not None and int(pertinence) < SEUIL_ANALYSE:
+        return "écarté"
     if total is None:
         return None
     return "fiable" if total >= SEUILS["fiable"] else "prudence" if total >= SEUILS["prudence"] else "écarté"
@@ -167,7 +173,8 @@ def main():
               f"accord {pct(sum(x == y for x, y in garde), len(garde))}"
               f" sur {len(garde)} article(s)\n")
 
-    niv = [(niveau(int(a["craap_total"])), niveau(h["_notes"]["craap_total"])) for a, h in paires
+    niv = [(niveau(int(a["craap_total"]), int(a["craap_pertinence"])),
+            niveau(h["_notes"]["craap_total"], h["_notes"]["craap_pertinence"])) for a, h in paires
            if h["_notes"]["craap_total"] is not None]
     if niv:
         print("Niveau CRAAP (lignes : automatique, colonnes : humain)")
@@ -184,7 +191,9 @@ def main():
     for a, h in paires:
         th = h["_notes"]["craap_total"]
         ta = int(a["craap_total"])
-        if th is None or (niveau(ta) == niveau(th) and abs(ta - th) < 3):
+        niv_a = niveau(ta, int(a["craap_pertinence"]))
+        niv_h = niveau(th, h["_notes"]["craap_pertinence"])
+        if th is None or (niv_a == niv_h and abs(ta - th) < 3):
             continue
         vus += 1
         detail = "  ".join(
