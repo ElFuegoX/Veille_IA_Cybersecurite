@@ -2,8 +2,9 @@ name: Collecte
 
 on:
   schedule:
-    - cron: "0 6,18 * * *"   # 2 fois par jour (heure UTC)
-  workflow_dispatch:          # lancement manuel possible
+    - cron: "00 12 * * *"   # TEST : 12h20 heure locale (11h20 UTC)
+    - cron: "30 12 * * *"   # TEST : 12h30 heure locale (11h30 UTC)
+  workflow_dispatch:         # lancement manuel possible
 
 # Une seule exécution à la fois : même groupe que p3_classification.yml
 # pour qu'aucun workflow n'écrive le CSV pendant qu'un autre le fait
@@ -31,9 +32,16 @@ jobs:
       - name: Collecte des flux
         run: python scripts/01_collecte.py
 
+      - name: Cache des textes extraits (persistance data/textes)
+        uses: actions/cache@v4
+        with:
+          path: data/textes
+          key: data-textes-${{ github.run_id }}
+          restore-keys: |
+            data-textes-
+
       # 60 articles par run. Les textes écrits dans data/textes/<id>.txt
-      # restent disponibles pour 04_qualite.py dans CE job.
-      # Pour les articles anciens, 04_qualite.py re-télécharge via re_extraire().
+      # restent disponibles pour 04_qualite.py et les futurs runs.
       - name: Extraction des articles (60 par exécution)
         run: python scripts/02_extraction.py --limite 60
 

@@ -131,9 +131,9 @@ function Home() {
                     'À classer'
                   )}
                 </span>
-                <span className="notability" title="Score CRAAP / 11">
+              <span className="notability" title="Score CRAAP / 11">
                   <Sparkles size={12} />
-                  {a.score !== null ? `${a.score}/11` : `${a.notability}/100`}
+                  {a.score !== null ? `${a.score}/11` : '—'}
                 </span>
               </div>
               <a

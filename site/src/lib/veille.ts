@@ -16,7 +16,7 @@ export type CraapScores = {
   autorite: number;   // /2
   exactitude: number; // /2
   objectif: number;   // /2
-  rigueur: number;    // /8 (seuil >= 6)
+  rigueur: number;    // /8 (sous-total hors pertinence, informatif)
   total: number;      // /11 (seuil >= 8)
 };
 

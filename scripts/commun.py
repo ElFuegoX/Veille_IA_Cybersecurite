@@ -19,7 +19,7 @@ DOSSIER_DATA = RACINE / "data"
 # Texte complet des articles : local uniquement, jamais commité (voir .gitignore)
 DOSSIER_TEXTES = DOSSIER_DATA / "textes"
 
-AGENT = "Mozilla/5.0 (compatible; veille-ifri/1.0)"
+AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 
 # ----------------------------------------------------------------------------
 # Schéma du CSV : colonnes groupées par propriétaire

@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { Download, FileText, ArrowRight, Info, CalendarDays, Check, ExternalLink, Sparkles } from 'lucide-react';
+import { createFileRoute } from '@tanstack/react-router';
+import { Download, FileText, CalendarDays, ExternalLink, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageIntro } from '@/components/veille/shell';
 import { pageHead } from '@/lib/veille';
@@ -130,40 +130,6 @@ function Report() {
         </div>
       </section>
 
-      <section className="report-bottom">
-        <div>
-          <h3>Dans ce rapport</h3>
-          <ul>
-            {[
-              'Méthode de collecte RSS et déduplication',
-              'Évaluation de la fiabilité selon la grille CRAAP',
-              'Classification des menaces en sous-thèmes S1 à S5',
-              'Analyse des incidents majeurs et vulnérabilités IA',
-              'Recommandations et axes stratégiques de sécurité',
-            ].map(s => (
-              <li key={s}>
-                <Check size={15} />
-                {s}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="report-note">
-          <Info size={20} />
-          <div>
-            <h3>Deux supports complémentaires</h3>
-            <p>
-              Le tableau de bord permet l’exploration dynamique et le filtrage des flux en temps réel, tandis que le rapport PDF en offre la synthèse analytique structurée.
-            </p>
-            <Button asChild variant="link" className="px-0">
-              <Link to="/veille">
-                Explorer tous les articles
-                <ArrowRight />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }

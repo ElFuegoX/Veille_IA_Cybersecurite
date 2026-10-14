@@ -27,10 +27,12 @@ ROOT = Path(__file__).resolve().parent.parent
 CSV_PATH = ROOT / "data" / "articles.csv"
 JSON_PATH = ROOT / "site" / "src" / "data" / "articles.json"
 
-# ── Seuils CRAAP (identiques à 05_evaluer_qualite.py) ─────────────────
-SEUIL_PERTINENCE = 2   # /3
-SEUIL_RIGUEUR    = 6   # /8  (actualité + autorité + exactitude + objectif)
-SEUIL_FIABLE     = 8   # /11 (pertinence + rigueur)
+# ── Seuils CRAAP (alignés sur config/grille_qualite.yaml) ─────────────
+# La classification repose sur le TOTAL /11, pas sur la rigueur seule.
+# pertinence < 2 → écarté ; total >= 8 → fiable ; total >= 6 → prudence ; sinon écarté.
+SEUIL_PERTINENCE = 2   # /3  — en dessous, l'article est exclu d'office
+SEUIL_FIABLE     = 8   # /11 — total >= 8 ET pertinence >= 2
+SEUIL_PRUDENCE   = 6   # /11 — total >= 6 ET pertinence >= 2
 
 # ── Source → nom affiché ───────────────────────────────────────────────
 SOURCE_DISPLAY: dict[str, str] = {
@@ -64,15 +66,24 @@ def safe_int(value: str, default: int | None = None) -> int | None:
         return default
 
 
-def reliability(pertinence: int | None, rigueur: int | None) -> str:
-    """Détermine le niveau de fiabilité CRAAP."""
-    if pertinence is None:
+def reliability(pertinence: int | None, total: int | None) -> str:
+    """Détermine le niveau de fiabilité CRAAP.
+
+    Logique alignée sur grille_qualite.yaml (seuils_craap) :
+    - pertinence < 2 → Écarté (hors sujet)
+    - total >= 8     → Fiable
+    - total >= 6     → À vérifier (prudence)
+    - sinon          → Écarté
+    """
+    if pertinence is None or total is None:
         return "Non évalué"
     if pertinence < SEUIL_PERTINENCE:
         return "Écarté"
-    if rigueur is not None and rigueur < SEUIL_RIGUEUR:
+    if total >= SEUIL_FIABLE:
+        return "Fiable"
+    if total >= SEUIL_PRUDENCE:
         return "À vérifier"
-    return "Fiable"
+    return "Écarté"
 
 
 def display_source(raw: str) -> str:
@@ -143,7 +154,7 @@ def convert_row(row: dict[str, str], idx: int) -> dict:
         "theme":      theme,
         "craap":      craap,
         "score":      total,
-        "reliability": reliability(pertinence, rigueur),
+        "reliability": reliability(pertinence, total),
         "reprises":   nb_reprises,
         "reprises_sources": [],  # Non disponible dans le CSV, à enrichir ultérieurement
         "collection": statut_extraction,

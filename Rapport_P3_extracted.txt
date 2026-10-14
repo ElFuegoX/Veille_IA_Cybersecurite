@@ -1,0 +1,146 @@
+Veille IA et cybersécurité
+Rapport : contribution P3, analyse (sous-thèmes et cas remarquables)
+Brouillon. Les passages entre crochets restent à compléter une fois la classification exécutée sur le corpus réel. Pour ça j’ai besoin des textes dans le dossier data
+3. Méthode : classification et cas remarquables
+3.1 Périmètre
+La classification porte sur les articles jugés pertinents lors de l'évaluation de la qualité (note de pertinence supérieure ou égale à 2 sur 3). L'exclusion des articles hors sujet relève de cette étape précédente : à ce stade, chaque article reçoit donc toujours un thème principal parmi S1 à S6. Les articles dont le texte n'a pas pu être extrait, ou qui comptent moins de 50 mots, ne sont pas classés.
+3.2 Les six sous-thèmes
+Code
+Intitulé
+Définition
+S1
+IA offensive
+Des attaquants utilisent l'IA comme arme : malware, phishing, deepfakes, agents d'attaque autonomes.
+S2
+Attaques contre les IA
+Le système d'IA est la cible ou le point d'entrée d'une attaque venue de l'extérieur : prompt injection, jailbreak, empoisonnement, fuites de données.
+S3
+Code généré par IA
+Qualité ou sécurité du code produit par une IA : vibe coding, failles introduites par les assistants de code.
+S4
+IA défensive
+L'IA sert à protéger, détecter ou répondre : SOC, réponse automatisée, découverte de vulnérabilités, offres des éditeurs.
+S5
+Gouvernance et risques
+Régulation, normes, incidents et retours d'expérience organisationnels.
+S6
+IA et réseaux DNS
+Le DNS est au cœur de l'article : détection, DGA, tunneling, attaques.
+
+Un article peut relever de plusieurs sous-thèmes (colonnes s1 à s6, valeur 0 ou 1), mais un seul est retenu comme thème principal (colonne theme_principal). Un sous-thème vaut 1 lorsqu'il occupe une part réelle de l'article, c'est-à-dire qu'il figure dans le titre ou qu'il est développé sur au moins un paragraphe. Une simple mention vaut 0. Lorsque deux thèmes principaux sont plausibles, le plus spécifique l'emporte selon l'ordre S6, S3, S2, S1 ou S4, puis S5.
+Les cas limites sont tranchés par des règles écrites à l'avance :
+S1 ou S4 : on suit le point de vue de l'article, attaquant ou défenseur. Un programme d'accès réservé à des équipes de défense, qui mentionne les tests offensifs, reste S4.
+S2 ou S3 : une faille dans le code produit par un assistant relève de S3, une attaque contre l'assistant lui-même relève de S2.
+Qui agit : un modèle ou un agent qui agit de lui-même hors du cadre prévu n'est pas une attaque contre une IA (S2). Si l'article porte sur l'incident et la réponse de l'organisation, le thème principal est S5.
+Une injection classique (SQL, commande) n'est pas une prompt injection : seule cette dernière, dirigée contre un système d'IA, relève de S2.
+S6 uniquement si le DNS est central ; un article qui cite le DNS en passant n'est pas classé S6.
+Article ambigu : on choisit le sous-thème le plus proche et on marque la ligne comme à vérifier, sans jamais forcer une étiquette en silence.
+3.3 Classification par un modèle de langage
+La classification est réalisée par un modèle de langage, Gemini (modèle gemini-3.5-flash-lite), appelé par API avec une température de 0 afin de limiter la variabilité. Les articles sont envoyés par lots de 5. Pour chaque article, le modèle reçoit le titre, la source et les 500 premiers mots du texte. Il répond en JSON avec les six indicateurs, le thème principal, une citation de justification (extrait de moins de 25 mots copié mot pour mot) et un indicateur a_verifier.
+Le prompt présente le rôle d'analyste de veille, les définitions de S1 à S6, les règles de départage, quelques exemples de cas limites et le format de sortie. Le même prompt peut être utilisé à la main dans un chat (le script produit le prompt d'un lot, puis réimporte la réponse) ou automatiquement par API.
+Le corpus traite précisément des attaques contre les modèles de langage, donc le texte d'un article peut contenir des instructions. Chaque article est délimité par des balises et présenté comme une donnée à analyser, jamais comme une instruction, et les balises éventuellement présentes dans le texte sont neutralisées.
+En cas d'erreur de l'API, chaque appel est retenté jusqu'à 3 fois, avec une attente de 20 secondes doublée à chaque essai. Si le quota est atteint, l'exécution s'arrête. Le script est rejouable : il ne traite que les lignes dont le thème principal est vide, donc les articles restants sont repris au passage suivant.
+3.4 Contrôles automatiques
+Chaque réponse du modèle est vérifiée avant d'être écrite dans le fichier de données :
+les indicateurs doivent valoir 0 ou 1 et le thème principal doit être S1 à S6, sinon la réponse est rejetée et la ligne sera retentée ;
+l'indicateur du thème principal doit valoir 1 ; sinon il est corrigé et la ligne est marquée à vérifier ;
+la citation doit être retrouvée mot pour mot dans le texte réellement envoyé au modèle (après normalisation des espaces, de la casse, des apostrophes, des guillemets et des tirets) et compter moins de 25 mots ; sinon la ligne est marquée à vérifier ;
+le modèle peut lui-même demander une vérification lorsque l'article est ambigu.
+Les lignes marquées à vérifier sont relues en priorité lors de la validation manuelle. Le contrôle de la citation garantit que l'extrait existe dans l'article, pas qu'il justifie le thème choisi : ce jugement reste humain.
+3.5 Extraction des CVE et des entreprises
+Les identifiants de vulnérabilités (format CVE-AAAA-NNNN) sont extraits par expression régulière dans le titre, le résumé et, lorsqu'il est disponible, le texte complet. Chaque article est ensuite confronté au catalogue CISA KEV (Known Exploited Vulnerabilities), téléchargé à chaque exécution : la valeur est « oui » si au moins une CVE citée est exploitée, « non » si des CVE sont citées mais absentes du catalogue, « aucun » s'il n'y en a pas.
+Les entreprises sont repérées à partir d'une liste maintenue dans un fichier de configuration. La recherche respecte la casse afin d'éviter les faux positifs sur des noms communs.
+3.6 Score de notabilité et cas remarquables
+Un score de notabilité de 0 à 11 est calculé pour chaque article pertinent :
+Critère
+Points
+Reprise de l'histoire par d'autres éditeurs
+1 par éditeur, plafonné à 5
+CVE citée et présente dans le catalogue KEV
+3
+CVE citée mais absente du catalogue
+1
+Au moins une entreprise citée
+1
+Qualité : craap_total supérieur ou égal à 8
+2
+
+Une reprise est comptée lorsqu'un autre éditeur traite la même histoire, c'est-à-dire lorsque les titres sont proches (similarité d'au moins 70 sur 100, calculée avec la bibliothèque rapidfuzz) ou lorsqu'une même CVE est citée. Les CVE ne servent plus à apparier les articles qui en citent plus de trois, comme les revues de la semaine.
+Un article est retenu comme cas remarquable si son score atteint 8 et que son thème est renseigné, ou s'il est le meilleur article de son sous-thème. Cette seconde règle garantit au moins un cas illustré par sous-thème pour le §5. À score égal, on départage par la note de qualité, puis par l'article le plus ancien.
+[À compléter : justifier les seuils (70 pour la similarité, 8 pour la notabilité) après observation du corpus réel, et confirmer avec P2 le seuil de qualité, qui doit être le même que celui de l'échelle CRAAP du rapport.]
+3.7 Mesure de la fiabilité
+La fiabilité du classifieur est mesurée en comparant ses sorties à l'annotation manuelle de l'échantillon, colonne par colonne (s1 à s6 et thème principal), avec le taux d'accord et le nombre d'articles positifs en commun. La validation manuelle du corpus réel, répartie entre les quatre membres, complète cette mesure en priorité sur les lignes marquées à vérifier.
+Indicateur
+Valeur
+Accord sur le thème principal (échantillon)
+[à compléter]
+Accord moyen sur s1 à s6 (échantillon)
+[à compléter]
+Part de lignes marquées à vérifier (corpus réel)
+[à compléter]
+Taux d'accord après relecture manuelle (corpus réel)
+[à compléter]
+
+5. Analyse par sous-thème
+Pour chaque sous-thème, on présente l'effectif, une tendance appuyée sur des chiffres et un cas illustré. Une tendance décrit ce qui se répète dans plusieurs articles, pas une anecdote isolée.
+5.1 S1 : IA offensive
+Effectif : [nombre d'articles en thème principal, nombre avec s1 = 1]
+Tendance : [ce qui se répète dans les articles du sous-thème, avec un chiffre]
+Cas illustré : [titre, source, date, lien, et pourquoi ce cas est représentatif]
+5.2 S2 : Attaques contre les IA
+Effectif : [nombre d'articles en thème principal, nombre avec s2 = 1]
+Tendance : [ce qui se répète dans les articles du sous-thème, avec un chiffre]
+Cas illustré : [titre, source, date, lien, et pourquoi ce cas est représentatif]
+5.3 S3 : Code généré par IA
+Effectif : [nombre d'articles en thème principal, nombre avec s3 = 1]
+Tendance : [ce qui se répète dans les articles du sous-thème, avec un chiffre]
+Cas illustré : [titre, source, date, lien, et pourquoi ce cas est représentatif]
+5.4 S4 : IA défensive
+Effectif : [nombre d'articles en thème principal, nombre avec s4 = 1]
+Tendance : [ce qui se répète dans les articles du sous-thème, avec un chiffre]
+Cas illustré : [titre, source, date, lien, et pourquoi ce cas est représentatif]
+5.5 S5 : Gouvernance et risques
+Effectif : [nombre d'articles en thème principal, nombre avec s5 = 1]
+Tendance : [ce qui se répète dans les articles du sous-thème, avec un chiffre]
+Cas illustré : [titre, source, date, lien, et pourquoi ce cas est représentatif]
+5.6 S6 : IA et réseaux DNS
+Effectif : [nombre d'articles en thème principal, nombre avec s6 = 1]
+Tendance : [ce qui se répète dans les articles du sous-thème, avec un chiffre]
+Cas illustré : [titre, source, date, lien, et pourquoi ce cas est représentatif]
+6. Analyse transversale
+Cette partie met en relation les sous-thèmes entre eux et avec les autres variables du corpus. Pistes à traiter, à partir du fichier de données :
+croisements : quelles paires de sous-thèmes apparaissent ensemble le plus souvent, et pourquoi ;
+répartition des sous-thèmes selon le type de source (presse spécialisée, éditeurs, institutions) ;
+évolution dans le temps, si la période couverte le permet ;
+poids des vulnérabilités exploitées (catalogue KEV) selon le sous-thème ;
+part des articles marqués à vérifier par sous-thème, qui indique les frontières floues entre catégories.
+Fiches de cas remarquables
+Une fiche par cas retenu. Le résumé est écrit avec ses propres mots : on ne reproduit ni le texte complet de l'article ni de longs extraits.
+Rubrique
+Contenu
+Titre
+[ ]
+Lien, source, date
+[ ]
+Sous-thèmes
+[principal, puis autres]
+Résumé
+[3 à 5 phrases, en vos propres mots]
+Pourquoi ce cas est notable
+[score de notabilité et détail : reprises, CVE, entreprises, qualité]
+CVE et entreprises
+[ ]
+Qualité (CRAAP)
+[note totale et point faible éventuel]
+Point de vigilance
+[ambiguïté de classement, limite de la source]
+
+Limites propres à P3 (contribution au §7)
+La fiabilité du classifieur a été mesurée sur un échantillon annoté à la main de petite taille. À la version examinée, l'échantillon comptait 19 articles dont 14 pertinents, et S3 n'y apparaissait qu'une fois et S6 jamais. Les résultats sur ces deux sous-thèmes ne sont donc pas vérifiables. 
+Les catégories ne sont pas mutuellement exclusives et la frontière entre elles est parfois subjective, en particulier pour S5. Des annotateurs humains peuvent diverger entre eux ; le taux d'accord avec le modèle est borné par cet accord humain.
+Le modèle ne voit que le début du texte (500 mots) : un sous-thème développé en fin d'article peut lui échapper.
+Même avec une température de 0, un modèle de langage peut donner des réponses différentes d'un passage à l'autre ; les résultats dépendent aussi de la version du modèle utilisée.
+Le contrôle de citation vérifie qu'un extrait existe dans le texte, pas qu'il justifie le thème.
+Les seuils du score de notabilité sont fixés a priori et le score reste une approximation de l'importance d'un article ; il favorise les sujets très repris et ceux qui citent des CVE.
+L'extraction des CVE et des entreprises dépend de listes et d'expressions régulières : une entreprise absente de la liste n'est pas détectée.
+Le texte complet des articles n'est pas disponible dans le workflow automatisé, ce qui empêche la classification automatique et limite l'extraction des CVE au titre et au résumé. (Pour le moment … Je ne sais pas encore si Donald a pu régler ça) 

@@ -28,11 +28,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests rapidfuzz trafilatura
-
-      # Le script 06_classifier.py utilise re_extraire() depuis commun.py
-      # pour re-télécharger les textes manquants (data/textes/<id>.txt).
-      # trafilatura est installé ci-dessus pour que re_extraire fonctionne.
+      - name: Restauration du cache des textes extraits
+        uses: actions/cache@v4
+        with:
+          path: data/textes
+          key: data-textes-${{ github.run_id }}
+          restore-keys: |
+            data-textes-
 
       - name: Classification
         env:

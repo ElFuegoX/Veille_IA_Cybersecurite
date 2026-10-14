@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ShieldCheck, FlaskConical } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export function SiteHeader() {
   return (
@@ -46,12 +46,6 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      <div className="footer-method">
-        <FlaskConical size={17} className="shrink-0 text-muted-foreground" />
-        <p>
-          Observatoire de veille sur l’intelligence artificielle et la cybersécurité. Les articles sont collectés en continu via flux RSS et évalués de manière rigoureuse selon la grille CRAAP (Pertinence thématique et Rigueur méthodologique).
-        </p>
-      </div>
       <div className="footer-bottom">
         <span>
           Veille IA &amp; Cybersécurité <span className="footer-divider">/</span> Observatoire

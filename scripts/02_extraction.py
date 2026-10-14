@@ -16,11 +16,15 @@ robots.txt) | lien_redirection (lien Google inutilisable).
 Usage : python scripts/02_extraction.py [--csv data/articles.csv]
 """
 import argparse
+import sys
 import time
 import urllib.request
 from collections import Counter
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 import trafilatura
 
@@ -34,6 +38,33 @@ TAILLE_MAX = 5_000_000   # octets lus au maximum par page
 _robots = {}
 
 
+import re
+
+def resoudre_url(url):
+    """Tente de résoudre l'URL finale si l'URL est une redirection (Google News / Alertes)."""
+    if not url:
+        return ""
+    if "news.google.com" in url or "google.com/url" in url:
+        try:
+            req = urllib.request.Request(url, headers={
+                "User-Agent": AGENT,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "fr,en;q=0.9",
+            })
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                url_finale = resp.geturl()
+                if url_finale and "news.google.com" not in url_finale:
+                    return url_finale
+                # Tentative d'extraction du lien dans le HTML de redirection Google
+                html_deb = resp.read(25000).decode("utf-8", errors="ignore")
+                m = re.search(r'data-n-au="([^"]+)"', html_deb) or re.search(r'<c-wiz[^>]*>.*?<a[^>]+href="([^"]+)"', html_deb, re.DOTALL)
+                if m and m.group(1).startswith("http"):
+                    return m.group(1)
+        except Exception:
+            pass
+    return url
+
+
 def autorise(url):
     """Respect de robots.txt (si robots.txt est inaccessible : autorisé)."""
     p = urlparse(url)
@@ -42,7 +73,7 @@ def autorise(url):
         rp = RobotFileParser()
         try:
             req = urllib.request.Request(base + "/robots.txt", headers={"User-Agent": AGENT})
-            with urllib.request.urlopen(req, timeout=10) as r:
+            with urllib.request.urlopen(req, timeout=5) as r:
                 rp.parse(r.read(500_000).decode("utf-8", "ignore").splitlines())
             _robots[base] = rp
         except Exception:
@@ -53,7 +84,12 @@ def autorise(url):
 
 def telecharger(url):
     req = urllib.request.Request(url, headers={
-        "User-Agent": AGENT, "Accept-Language": "fr,en;q=0.8",
+        "User-Agent": AGENT,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "fr,en;q=0.9",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "cross-site",
     })
     with urllib.request.urlopen(req, timeout=20) as r:
         charset = r.headers.get_content_charset() or "utf-8"
@@ -82,8 +118,17 @@ def analyser_html(html_page, url=""):
 def traiter_ligne(r):
     """Met à jour la ligne r (dict) et retourne le statut."""
     url = r["lien"]
-    if not url or "news.google.com" in url:
+    if not url:
         return "lien_redirection"
+    
+    # Résolution de redirection si lien Google
+    if "news.google.com" in url or "google.com/url" in url:
+        url_resolue = resoudre_url(url)
+        if url_resolue and "news.google.com" not in url_resolue:
+            url = url_resolue
+        else:
+            return "lien_redirection"
+
     if not autorise(url):
         return "robots"
     try:
@@ -121,7 +166,7 @@ def main():
     lignes = lire_csv(args.csv)
     a_faire = [
         r for r in lignes
-        if not r["statut_extraction"] or (args.refaire_echecs and r["statut_extraction"] == "echec_http")
+        if not r["statut_extraction"] or (args.refaire_echecs and r["statut_extraction"] in ("echec_http", "lien_redirection"))
     ]
     print(f"{len(a_faire)} article(s) à traiter sur {len(lignes)}")
 

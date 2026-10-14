@@ -9,24 +9,17 @@ const reliabilityItems = [
 ];
 
 export function ThemeChart() {
-  const items = [
-    ...themes.map(t => ({
-      label: t.name,
-      code: t.code,
-      color: t.color,
-      count: articles.filter(a => a.theme === t.code).length,
-    })),
-    {
-      label: 'À classer',
-      code: '—',
-      color: 'series-neutral',
-      count: articles.filter(a => !a.theme || a.theme === '—').length,
-    },
-  ];
+  const themeItems = themes.map(t => ({
+    label: t.short,
+    fullLabel: t.name,
+    code: t.code,
+    color: t.color,
+    count: articles.filter(a => a.theme === t.code).length,
+  }));
 
-  const maxVal = Math.max(...items.map(t => t.count), 1);
-  const step = Math.ceil(maxVal / 4);
-  const axisTicks = [0, step, step * 2, step * 3, Math.max(step * 4, maxVal)];
+  const unclassified = articles.filter(a => !a.theme || a.theme === '—').length;
+  const total = articles.length || 1;
+  const maxVal = Math.max(...themeItems.map(t => t.count), 1);
 
   return (
     <section className="chart-panel theme-panel">
@@ -40,36 +33,33 @@ export function ThemeChart() {
         </span>
       </div>
 
-      <div className="bar-chart">
-        {items.map(t => {
-          const pct = Math.min(100, Math.round((t.count / maxVal) * 100));
+      <div className="gauge-grid">
+        {themeItems.map(t => {
+          // Hauteur proportionnelle : strictement 0 si aucun article (pas de jauge préremplie)
+          const pct = t.count === 0 ? 0 : Math.min(100, 3 + (t.count / maxVal) * 97);
+          const share = Math.round((t.count / total) * 100);
           return (
-            <div className="bar-row" key={t.code}>
-              <div className="bar-label" title={`${t.code} · ${t.label}`}>
-                <span>{t.code}</span>
-                <span className="bar-label-text">{t.label}</span>
+            <div className="gauge-item" key={t.code} title={t.fullLabel}>
+              <div className="gauge-track">
+                {t.count > 0 && (
+                  <div
+                    className={`gauge-fill bg-${t.color}`}
+                    style={{ height: `${pct}%` }}
+                  />
+                )}
               </div>
-              <div className="bar-track">
-                <div
-                  className={`bar-fill bg-${t.color}`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <strong>{t.count}</strong>
+              <div className="gauge-value">{t.count}</div>
+              <div className="gauge-code">{t.code}</div>
+              <div className="gauge-label" title={t.fullLabel}>{t.label}</div>
+              <div className="gauge-share">{share} %</div>
             </div>
           );
         })}
       </div>
 
-      <div className="chart-axis">
-        {axisTicks.map((val, idx) => (
-          <span key={idx}>{val}</span>
-        ))}
-      </div>
-
       <div className="panel-note">
         <span className="status-dot bg-series-neutral" />{' '}
-        {items.at(-1)?.count} article(s) en attente de classification
+        {unclassified} article(s) en attente de classification
       </div>
     </section>
   );
