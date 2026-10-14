@@ -30,7 +30,11 @@ import argparse
 import json
 import os
 import re
+import sys
 import time
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 import urllib.error
 import urllib.request
 from collections import Counter
@@ -90,7 +94,9 @@ class Grille:
     def termes_ia(self, texte):
         return [m.group(0) for m in FILTRES["ia"].finditer(texte)] + self.ia_en_plus.findall(texte)
 
-    def niveau(self, total):
+    def niveau(self, total, pertinence=None):
+        if pertinence is not None and int(pertinence) < self.seuil_analyse:
+            return "écarté"
         s = self.g["seuils_craap"]
         return "fiable" if total >= s["fiable"] else "prudence" if total >= s["prudence"] else "écarté"
 
@@ -369,7 +375,7 @@ def noter_ligne(r, grille, ia, aujourdhui):
     r["craap_objectif"] = str(obj)
     r["craap_total"] = str(total)
     r["craap_justification"] = (
-        f"Total {total}/11 ({grille.niveau(total)}). "
+        f"Total {total}/11 ({grille.niveau(total, pert)}). "
         f"Actualité({act}) : {act_m}. "
         f"Pertinence({pert}/3) : {pert_m}. "
         f"Autorité({aut}) : {aut_m}. "
@@ -412,7 +418,7 @@ def main():
             reextrait = not avait_texte and chemin_texte.exists()
             tag_reext = " [re-ext]" if reextrait else ""
             methodes[methode.split(" (")[0]] += 1
-            niveaux[grille.niveau(int(r["craap_total"]))] += 1
+            niveaux[grille.niveau(int(r["craap_total"]), int(r["craap_pertinence"]))] += 1
             pertinences[r["craap_pertinence"]] += 1
             if not cat:
                 inconnues[grille.sources.categorie(r)[1] or "(vide)"] += 1

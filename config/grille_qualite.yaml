@@ -178,8 +178,8 @@ objectif:
 
 # --- Seuils du total CRAAP (sur 11) -------------------------------------------------
 seuils_craap:
-  fiable: 9       # 9 et plus
-  prudence: 6     # 6 à 8 ; 5 et moins = écarté (sauf cas d'étude)
+  fiable: 8       # 8 et plus (si pertinence >= 2)
+  prudence: 6     # 6 et 7 (si pertinence >= 2) ; 5 et moins ou pertinence < 2 = écarté
 
 # --- IA (optionnel) : affine exactitude et objectif ---------------------------------
 # Utilisée seulement si la clé API est présente dans l'environnement, et seulement
