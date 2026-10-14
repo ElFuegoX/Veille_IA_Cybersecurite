@@ -55,8 +55,6 @@ export function ArticleDrawer({
           <SheetDescription className="flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar size={13} />
             Publié le {formatDate(article.date)}
-            <span className="opacity-40">·</span>
-            <span>Statut HTTP : {article.collection}</span>
           </SheetDescription>
         </SheetHeader>
 
@@ -165,9 +163,11 @@ export function ArticleDrawer({
                   </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground italic pt-1">
-                  💡 {article.justification_craap}
-                </p>
+                {article.justification_craap && (
+                  <p className="text-xs text-muted-foreground pt-2 border-t border-border/50">
+                    {article.justification_craap.replace(/\[(?:règles|IA gemini|IA groq)\]/gi, '').trim()}
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground italic py-2">
@@ -223,17 +223,6 @@ export function ArticleDrawer({
                 Article exclusif ou non encore repris par d’autres sources suivies.
               </p>
             )}
-          </div>
-
-          {/* Notabilité */}
-          <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/40 text-xs">
-            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-              <Sparkles size={13} className="text-primary" />
-              Score global de notabilité
-            </span>
-            <strong className="font-bold font-display text-sm text-foreground">
-              {article.notability} / 100
-            </strong>
           </div>
         </div>
       </SheetContent>
