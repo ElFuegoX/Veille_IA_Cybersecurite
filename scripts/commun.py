@@ -1,7 +1,9 @@
 """Éléments communs aux scripts : schéma du CSV, lecture/écriture, nettoyage.
 
-Le schéma (33 colonnes) est gelé ici. Chaque script ne remplit que ses colonnes
+Le schéma (26 colonnes) est gelé ici. Chaque script ne remplit que ses colonnes
 et conserve toutes les autres telles quelles.
+La fonction re_extraire() est partagée par 04_qualite.py et les scripts P3 :
+quand le texte n'est plus sur disque, elle le retélécharge depuis l'URL.
 """
 import csv
 import html
@@ -29,8 +31,8 @@ BLOCS = {
         "craap_actualite", "craap_pertinence", "craap_autorite", "craap_exactitude",
         "craap_objectif", "craap_total", "craap_justification",
     ],
-    "P3_sous_themes": ["s1", "s2", "s3", "s4", "s5", "s6", "theme_principal", "justification_theme", "a_verifier"],
-    "P3_cas": ["nb_sources_reprise", "score_notabilite", "cves", "entreprises", "cve_kev", "cas_retenu"],
+    "P3_sous_themes": ["s1", "s2", "s3", "s4", "s5", "justification_theme"],
+    "P3_cas": ["nb_sources_reprise", "score_notabilite"],
     "P4_controle": ["valide_manuel", "relecteur"],
 }
 COLONNES = [c for cols in BLOCS.values() for c in cols]
@@ -228,6 +230,73 @@ def resume_court(texte, max_car=400):
     if not out:
         out = texte[:max_car].rsplit(" ", 1)[0] + "…"
     return out
+
+
+# ----------------------------------------------------------------------------
+# Ré-extraction à la demande (utilisée par 04_qualite.py et les scripts P3)
+# ----------------------------------------------------------------------------
+def re_extraire(r):
+    """Télécharge la page de l'article r et écrit data/textes/<id>.txt.
+
+    Utilisée quand statut_extraction est 'ok' mais que le fichier texte est
+    absent (le runner GitHub Actions l'a supprimé à la fin du job précédent).
+
+    Retourne (texte_str, succes_bool) :
+      - succes=True  : texte extrait (≥ 200 car.) et sauvegardé dans DOSSIER_TEXTES
+      - succes=False : extraction impossible (lien Google, robots, erreur réseau,
+                       texte trop court) ; texte_str = '' dans ce cas.
+
+    N'écrase JAMAIS les colonnes déjà renseignées de la ligne (pas d'effets de bord).
+    Ne modifie pas statut_extraction : c'est 02_extraction.py qui en est propriétaire.
+    """
+    import time as _time
+    import urllib.request as _req
+    from urllib.parse import urlparse as _up
+    from urllib.robotparser import RobotFileParser as _RFP
+    try:
+        import trafilatura as _tra
+    except ImportError:
+        return "", False
+
+    url = r.get("lien", "")
+    if not url or "news.google.com" in url:
+        return "", False
+
+    # Respect robots.txt (cache simple en mémoire locale à chaque appel)
+    p = _up(url)
+    base = f"{p.scheme}://{p.netloc}"
+    try:
+        rp = _RFP()
+        rq = _req.Request(base + "/robots.txt", headers={"User-Agent": AGENT})
+        with _req.urlopen(rq, timeout=10) as resp:
+            rp.parse(resp.read(500_000).decode("utf-8", "ignore").splitlines())
+        if not rp.can_fetch(AGENT, url):
+            return "", False
+    except Exception:
+        pass  # inaccessible : on tente quand même le téléchargement
+
+    try:
+        rq = _req.Request(url, headers={
+            "User-Agent": AGENT, "Accept-Language": "fr,en;q=0.8",
+        })
+        with _req.urlopen(rq, timeout=20) as resp:
+            charset = resp.headers.get_content_charset() or "utf-8"
+            html = resp.read(5_000_000).decode(charset, errors="replace")
+    except Exception:
+        return "", False
+
+    texte = _tra.extract(
+        html, url=url, include_comments=False, include_tables=False,
+        favor_precision=True,
+    ) or ""
+    if len(texte) < 200:
+        return "", False
+
+    DOSSIER_TEXTES.mkdir(parents=True, exist_ok=True)
+    chemin = DOSSIER_TEXTES / f"{r['id']}.txt"
+    chemin.write_text(texte, encoding="utf-8")
+    _time.sleep(1.0)  # politesse réseau
+    return texte, True
 
 
 # ----------------------------------------------------------------------------
