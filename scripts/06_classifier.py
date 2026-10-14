@@ -126,7 +126,7 @@ def appeler_modele(prompt):
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"]
     if fournisseur == "gemini":
-        modele = os.environ.get("LLM_MODELE", "gemini-2.5-flash")
+        modele = os.environ.get("LLM_MODELE", "gemini-3.5-flash-lite")
         r = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{modele}:generateContent",
             headers={"x-goog-api-key": cle_api("GEMINI_API_KEY")},

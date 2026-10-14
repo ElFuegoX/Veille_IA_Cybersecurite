@@ -193,7 +193,7 @@ llm:
       variable_cle: GROQ_API_KEY
     gemini:
       url: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
-      modele: gemini-2.5-flash
+      modele: gemini-3.5-flash-lite
       variable_cle: GEMINI_API_KEY
   caracteres_max: 6000      # extrait du texte envoyé au modèle
   pause_secondes: 2.5       # entre deux appels (limites des offres gratuites)
