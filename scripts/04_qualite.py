@@ -44,7 +44,7 @@ import yaml
 
 from commun import (
     AGENT, DOSSIER_CONFIG, DOSSIER_DATA, DOSSIER_TEXTES, FILTRES, auteur_valide,
-    domaine, ecrire_csv, lire_csv,
+    domaine, ecrire_csv, lire_csv, re_extraire,
 )
 
 # ----------------------------------------------------------------------------
@@ -139,12 +139,26 @@ class Sources:
 # Critères
 # ----------------------------------------------------------------------------
 def texte_article(r):
-    """(texte, complet) : texte extrait si disponible, sinon le résumé."""
+    """(texte, complet) : texte extrait si disponible, sinon re-téléchargement,
+    sinon le résumé (fallback).
+
+    Quand statut_extraction est 'ok' mais que data/textes/<id>.txt est absent
+    (runner GitHub Actions du job précédent l'a supprimé), on tente de
+    re-télécharger le texte via re_extraire() depuis commun. Si cela réussit,
+    le fichier est recréé pour les étapes suivantes de ce même job.
+    """
     chemin = DOSSIER_TEXTES / f"{r['id']}.txt"
     if r["id"] and chemin.exists():
         texte = chemin.read_text(encoding="utf-8")
         if texte.strip():
             return texte, True
+
+    # Fichier absent mais extraction marquée 'ok' : on tente la ré-extraction
+    if r.get("statut_extraction") == "ok":
+        texte, ok = re_extraire(r)
+        if ok:
+            return texte, True
+
     return r["resume"], False
 
 
@@ -397,15 +411,19 @@ def main():
     methodes, niveaux, pertinences, inconnues = Counter(), Counter(), Counter(), Counter()
     try:
         for i, r in enumerate(a_faire, start=1):
+            chemin_texte = DOSSIER_TEXTES / f"{r['id']}.txt"
+            avait_texte = chemin_texte.exists()
             methode, cat = noter_ligne(r, grille, ia, aujourdhui)
+            # Indique si une ré-extraction a eu lieu durant la notation
+            reextrait = not avait_texte and chemin_texte.exists()
+            tag_reext = " [re-ext]" if reextrait else ""
             methodes[methode.split(" (")[0]] += 1
             niveaux[grille.niveau(int(r["craap_total"]), int(r["craap_pertinence"]))] += 1
             pertinences[r["craap_pertinence"]] += 1
             if not cat:
                 inconnues[grille.sources.categorie(r)[1] or "(vide)"] += 1
             print(f"[{i}/{len(a_faire)}] P{r['craap_pertinence']} CRAAP {r['craap_total']:>2}/11 "
-                  f"({grille.niveau(int(r['craap_total']), int(r['craap_pertinence']))}) "
-                  f"{r['id']} {r['titre'][:50]}")
+                  f"{r['id']} {r['titre'][:55]}{tag_reext}")
     finally:
         ecrire_csv(args.csv, lignes)
 

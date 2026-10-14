@@ -18,7 +18,7 @@ jobs:
   p3:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,26 +28,18 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests rapidfuzz
+      - run: pip install requests rapidfuzz trafilatura
 
-      # À DÉCIDER AVEC P1 : récupérer ici les textes (data/textes) avant de classer.
-
-      - name: Vérifier la présence des textes
-        run: |
-          if [ -z "$(find data/textes -name '*.txt' 2>/dev/null | head -1)" ]; then
-            echo "::warning::Aucun fichier .txt dans data/textes : la classification ne traitera aucun article."
-          fi
+      # Le script 06_classifier.py utilise re_extraire() depuis commun.py
+      # pour re-télécharger les textes manquants (data/textes/<id>.txt).
+      # trafilatura est installé ci-dessus pour que re_extraire fonctionne.
 
       - name: Classification
         env:
           LLM_FOURNISSEUR: gemini
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          LLM_MODELE: gemini-3.5-flash-lite  
+          LLM_MODELE: gemini-2.5-flash
         run: python scripts/06_classifier.py --csv data/articles.csv --limite 60
-
-      - name: CVE et entreprises
-        if: ${{ !cancelled() }}
-        run: python scripts/07_cve.py --csv data/articles.csv
 
       - name: Notabilité
         if: ${{ !cancelled() }}
@@ -64,6 +56,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/articles.csv site/src/data/articles.json
           git diff --cached --quiet && exit 0
-          git commit -m "P3 : classification, CVE, notabilité"
+          git commit -m "P3 : classification, notabilité"
           git pull --rebase origin main
           git push

@@ -10,37 +10,32 @@ S2 Attaques contre les IA : le système d'IA est la cible ou le point d'entrée 
 S3 Code généré par IA : qualité ou sécurité du code produit par une IA (vibe coding, failles introduites par les assistants de code).
 S4 IA défensive : l'IA sert à protéger, détecter ou répondre (SOC, réponse automatisée, découverte de vulnérabilités, offres des éditeurs).
 S5 Gouvernance et risques : régulation, normes, incidents et retours d'expérience organisationnels.
-S6 IA et réseaux DNS : le DNS est au cœur de l'article (détection, DGA, tunneling, attaques). Un article qui cite le DNS en passant n'est PAS S6.
 
 RÈGLES
-1. s1 à s6 valent 0 ou 1. Plusieurs peuvent valoir 1, mais seulement si le sous-thème occupe une part réelle de l'article. Une mention en passant ne suffit pas : mets 0.
-2. theme_principal est le sujet qui occupe l'essentiel de l'article (titre et début). En cas d'égalité, le plus spécifique l'emporte : S6 > S3 > S2 > S1 ou S4 (règle 5) > S5.
+1. s1 à s5 valent 0 ou 1. Plusieurs peuvent valoir 1, mais seulement si le sous-thème occupe une part réelle de l'article. Une mention en passant ne suffit pas : mets 0.
+2. Au moins un sous-thème doit valoir 1.
 3. S1, S2 ou S5 : demande-toi QUI agit.
    - Des humains attaquent avec l'IA : S1. Phishing généré par IA contre une entreprise = S1.
    - Quelqu'un attaque un système d'IA : S2. Injection de prompt qui détourne un agent = S2.
-   - Un modèle ou un agent agit de lui-même hors du cadre prévu (erreur, comportement non voulu, désalignement) : ce n'est PAS S2. Si l'article porte sur l'incident et la réponse de l'organisation, theme_principal = S5, avec s1 = 1 seulement si le modèle a lui-même mené une attaque.
+   - Un modèle ou un agent agit de lui-même hors du cadre prévu (erreur, comportement non voulu, désalignement) : ce n'est PAS S2. Si l'article porte sur l'incident et la réponse de l'organisation, s5 = 1, avec s1 = 1 seulement si le modèle a lui-même mené une attaque.
    - Ne confonds pas une "injection" classique (SQL, commande) avec la "prompt injection". Seule la prompt injection contre un système d'IA relève de S2.
 4. S2 ou S3 : une faille dans le code produit par un assistant = S3. Une attaque contre l'assistant de code lui-même = S2.
 5. S1 ou S4 : suis le point de vue de l'article (attaquant ou défenseur). Un outil ou programme conçu pour la défense reste S4 (s1 = 0), même s'il mentionne des usages offensifs encadrés (tests d'intrusion, red team).
 6. S5 seulement si la leçon organisationnelle, l'incident ou la réglementation est le cœur de l'article. Sinon, classe selon la nature technique.
-7. Si le DNS est central, S6 est principal, et les autres sN restent à 1 s'ils s'appliquent.
-8. a_verifier = true dès que deux sous-thèmes principaux sont plausibles, que tu hésites entre S5 et un sous-thème technique, ou que l'article est ambigu ou ne correspond à aucun sous-thème. Dans ce cas, choisis le plus proche. Ne force jamais une étiquette en silence.
-9. justification_theme : un extrait court (moins de 25 mots) copié MOT POUR MOT du titre ou du texte fourni. Préfère une phrase du texte qui montre le sujet, et n'utilise le titre que si le texte ne contient rien de net. N'invente rien, ne reformule pas, ne mets pas de "...".
-10. theme_principal doit toujours avoir son sN correspondant à 1.
+7. justification_theme : un extrait court (moins de 25 mots) copié MOT POUR MOT du titre ou du texte fourni. Préfère une phrase du texte qui montre le sujet, et n'utilise le titre que si le texte ne contient rien de net. N'invente rien, ne reformule pas, ne mets pas de "...".
 
 EXEMPLES DE CAS LIMITES
-- "Une étude montre que 40 % du code proposé par un assistant contient des failles" : S3 principal, s2 = 0.
-- "Une injection de prompt permet de détourner un assistant de code et d'exfiltrer des secrets" : S2 principal, s3 = 0.
-- "Un éditeur lance un agent qui trie automatiquement les alertes du SOC" : S4 principal.
-- "Des attaquants utilisent un LLM pour rédiger des e-mails de phishing" : S1 principal.
-- "Un modèle détecte des domaines générés algorithmiquement dans le trafic DNS d'un réseau" : S6 principal, s4 = 1.
-- "Un agent IA supprime par erreur une base de production, l'entreprise revoit ses accès" : S5 principal, s2 = 0, a_verifier = true.
+- "Une étude montre que 40 % du code proposé par un assistant contient des failles" : S3 = 1, s2 = 0.
+- "Une injection de prompt permet de détourner un assistant de code et d'exfiltrer des secrets" : S2 = 1, s3 = 0.
+- "Un éditeur lance un agent qui trie automatiquement les alertes du SOC" : S4 = 1.
+- "Des attaquants utilisent un LLM pour rédiger des e-mails de phishing" : S1 = 1.
+- "Un agent IA supprime par erreur une base de production, l'entreprise revoit ses accès" : S5 = 1, s2 = 0.
 
 FORMAT DE SORTIE
 Réponds uniquement par un objet JSON, sans texte autour, avec une clé "resultats" contenant un objet par article, dans l'ordre :
 {"resultats": [
-  {"id": "0412", "s1": 0, "s2": 1, "s3": 0, "s4": 0, "s5": 0, "s6": 0,
-   "theme_principal": "S2", "justification_theme": "...", "a_verifier": false}
+  {"id": "0412", "s1": 0, "s2": 1, "s3": 0, "s4": 0, "s5": 0,
+   "justification_theme": "..."}
 ]}
 
 ARTICLES

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""P3 : classification des articles en sous-thèmes S1 à S6. Rejouable.
+"""P3 : classification des articles en sous-thèmes S1 à S5. Rejouable.
 
-Ne traite que les lignes où theme_principal est vide, dont craap_pertinence >= 2
+Ne traite que les lignes où justification_theme est vide, dont craap_pertinence >= 2
 et dont le texte existe dans data/textes/<id>.txt (au moins MIN_MOTS mots).
 
 Usage :
@@ -25,12 +25,15 @@ import time
 
 import requests
 
-from commun import DOSSIER_CONFIG, DOSSIER_DATA, DOSSIER_TEXTES, ecrire_csv, lire_csv, norm_id, pertinence_ok
+from commun import (
+    DOSSIER_CONFIG, DOSSIER_DATA, DOSSIER_TEXTES, ecrire_csv, lire_csv,
+    norm_id, pertinence_ok, re_extraire,
+)
 
-SOUS_THEMES = ["S1", "S2", "S3", "S4", "S5", "S6"]
+SOUS_THEMES = ["S1", "S2", "S3", "S4", "S5"]
 COLS_S = [t.lower() for t in SOUS_THEMES]
-# Colonnes P3 de ce script (s6, theme_principal, a_verifier : à ajouter à commun.py)
-COLS_P3 = COLS_S + ["theme_principal", "justification_theme", "a_verifier"]
+# Colonnes P3 remplies par ce script
+COLS_P3 = COLS_S + ["justification_theme"]
 
 
 MIN_MOTS = 50         # en dessous, le texte n'est pas exploitable
@@ -53,9 +56,19 @@ def cle_api(nom):
 # ----------------------------------------------------------------------------
 # Sélection des lignes
 # ----------------------------------------------------------------------------
-def lire_texte(id_):
-    p = DOSSIER_TEXTES / f"{norm_id(id_)}.txt"  # convention à confirmer avec P1
-    return p.read_text(encoding="utf-8").strip() if p.exists() else ""
+def lire_texte(r):
+    """Retourne le texte de l'article, avec re-extraction si nécessaire."""
+    p = DOSSIER_TEXTES / f"{norm_id(r['id'])}.txt"
+    if p.exists():
+        texte = p.read_text(encoding="utf-8").strip()
+        if texte:
+            return texte
+    # Pas de fichier texte : tenter la ré-extraction
+    if r.get("statut_extraction") == "ok":
+        texte, ok = re_extraire(r)
+        if ok:
+            return texte.strip()
+    return ""
 
 
 def tronquer(texte, n=MAX_MOTS):
@@ -63,7 +76,7 @@ def tronquer(texte, n=MAX_MOTS):
 
 
 def est_traitee(r):
-    return bool((r.get("theme_principal") or "").strip())
+    return bool((r.get("justification_theme") or "").strip())
 
 
 def preparer(lignes, limite=0):
@@ -77,7 +90,7 @@ def preparer(lignes, limite=0):
         if not pertinence_ok(r):
             ignores["pertinence"] += 1
             continue
-        texte = tronquer(lire_texte(r["id"]))
+        texte = tronquer(lire_texte(r))
         if not texte:
             ignores["sans_texte"] += 1
             continue
@@ -163,9 +176,9 @@ def avec_retries(prompt):
 # ----------------------------------------------------------------------------
 def normaliser(t):
     t = (t or "").lower()
-    for a, b in (("’", "'"), ("‘", "'"), ("«", '"'), ("»", '"'), ("“", '"'),
-                 ("”", '"'), ("–", "-"), ("—", "-"), ("\u00a0", " "),
-                 ("…", " "), ("...", " ")):
+    for a, b in (("\u2018", "'"), ("\u2019", "'"), ("\u00ab", '"'), ("\u00bb", '"'), ("\u201c", '"'),
+                 ("\u201d", '"'), ("\u2013", "-"), ("\u2014", "-"), ("\u00a0", " "),
+                 ("\u2026", " "), ("...", " ")):
         t = t.replace(a, b)
     return re.sub(r"\s+", " ", t).strip()
 
@@ -182,28 +195,23 @@ def valider(res, article):
     """Retourne les valeurs à écrire (chaînes) ou None si la réponse est inutilisable."""
     try:
         s = {c: int(res[c]) for c in COLS_S}
-        theme = str(res["theme_principal"]).strip().upper()
     except (KeyError, ValueError, TypeError):
         return None
-    if theme not in SOUS_THEMES or any(v not in (0, 1) for v in s.values()):
+    if any(v not in (0, 1) for v in s.values()):
         return None
-
-    verifier = str(res.get("a_verifier", "")).strip().lower() == "true"
-    col_theme = theme.lower()
-    if s[col_theme] == 0:  # cohérence : le thème principal doit être à 1
-        s[col_theme] = 1
-        verifier = True
+    # Vérification : au moins un sous-thème doit être à 1
+    if not any(v == 1 for v in s.values()):
+        return None
 
     citation = str(res.get("justification_theme", "")).strip()
     reference = normaliser(f'{article["titre"]} {article["texte"]}')
-    if not citation or len(citation.split()) >= 25 or normaliser(citation) not in reference:
-        verifier = True  # citation absente, trop longue ou non retrouvée
+    if citation and (len(citation.split()) >= 25 or normaliser(citation) not in reference):
+        citation = ""  # citation invalide, on la vide
     if citation[:1] in ("=", "+", "-", "@"):
         citation = "'" + citation  # Excel ne doit pas l'exécuter comme une formule
 
     out = {c: str(v) for c, v in s.items()}
-    out.update(theme_principal=theme, justification_theme=citation,
-               a_verifier="true" if verifier else "false")
+    out["justification_theme"] = citation
     return out
 
 
@@ -283,7 +291,7 @@ def evaluer(chemin_ref):
     ecrire_csv(auto, copie)
     traiter(auto)
     machine = {norm_id(r["id"]): r for r in lire_csv(auto)}
-    for col in COLS_S + ["theme_principal"]:
+    for col in COLS_S:
         paires = [(r[col].strip().upper(), machine[norm_id(r["id"])].get(col, "").strip().upper())
                   for r in ref
                   if (r.get(col) or "").strip() and (machine[norm_id(r["id"])].get(col) or "").strip()]
@@ -292,11 +300,10 @@ def evaluer(chemin_ref):
             continue
         ok = sum(1 for a, b in paires if a == b)
         print(f"{col:16s} accord {ok}/{len(paires)} ({100 * ok / len(paires):.0f} %)")
-        if col in COLS_S:
-            humain = sum(1 for a, _ in paires if a == "1")
-            modele = sum(1 for _, b in paires if b == "1")
-            communs = sum(1 for a, b in paires if a == "1" and b == "1")
-            print(f"{'':16s} positifs : humain {humain}, modèle {modele}, en commun {communs}")
+        humain = sum(1 for a, _ in paires if a == "1")
+        modele = sum(1 for _, b in paires if b == "1")
+        communs = sum(1 for a, b in paires if a == "1" and b == "1")
+        print(f"{'':16s} positifs : humain {humain}, modèle {modele}, en commun {communs}")
 
 
 def main():
