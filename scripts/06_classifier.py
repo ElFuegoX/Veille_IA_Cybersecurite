@@ -79,12 +79,12 @@ def est_traitee(r):
     return bool((r.get("justification_theme") or "").strip())
 
 
-def preparer(lignes, limite=0):
+def preparer(lignes, limite=0, refaire=False):
     """Articles à classer : titre + texte tronqué (c'est ce qui est envoyé au modèle)."""
     out = []
     ignores = {"deja_traite": 0, "pertinence": 0, "sans_texte": 0, "texte_court": 0}
     for r in lignes:
-        if est_traitee(r):
+        if est_traitee(r) and not refaire:
             ignores["deja_traite"] += 1
             continue
         if not pertinence_ok(r):
@@ -260,8 +260,8 @@ def appliquer(chemin, articles_par_id, brut):
 # ----------------------------------------------------------------------------
 # Modes
 # ----------------------------------------------------------------------------
-def traiter(chemin, limite=0):
-    a_faire = preparer(lire_csv(chemin), limite)
+def traiter(chemin, limite=0, refaire=False):
+    a_faire = preparer(lire_csv(chemin), limite, refaire=refaire)
     print(f"{len(a_faire)} article(s) à classer dans {chemin}")
     total = 0
     for i in range(0, len(a_faire), TAILLE_LOT):
@@ -317,6 +317,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--csv", default=str(DOSSIER_DATA / "echantillon.csv"))
     ap.add_argument("--limite", type=int, default=0, help="nombre max d'articles (quota)")
+    ap.add_argument("--refaire", action="store_true",
+                    help="réannoter aussi les articles déjà classés (les colonnes P3 seront remplacées)")
     ap.add_argument("--lot", type=int, metavar="N", help="affiche le prompt de N articles")
     ap.add_argument("--sortie", metavar="FICHIER", help="avec --lot : écrit le prompt en UTF-8")
     ap.add_argument("--importer", metavar="FICHIER", help="importe une réponse JSON du chat")
@@ -341,7 +343,7 @@ def main():
     elif a.evaluer:
         evaluer(a.csv)
     else:
-        traiter(a.csv, a.limite)
+        traiter(a.csv, a.limite, refaire=a.refaire)
 
 
 if __name__ == "__main__":

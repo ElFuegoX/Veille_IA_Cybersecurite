@@ -58,8 +58,10 @@ Les autres colonnes (schéma de 26 colonnes dans `scripts/commun.py`) ne sont ja
   `GEMINI_API_KEY` (secret GitHub du même nom) et `LLM_MODELE`. Quota gratuit à vérifier
   dans Google AI Studio. Sans clé ou sans texte : aucune ligne classée.
 - Workflow : `.github/workflows/p3_classification.yml` (déclenché après la collecte ou
-  manuellement). Même groupe `concurrency` que la collecte pour ne jamais écrire le CSV
-  en même temps.
+  manuellement). Pour réannoter aussi les articles déjà classés, lancer le workflow depuis
+  Actions > P3 classification avec l'option `refaire` activée : il reprend tous les articles
+  éligibles sans limite de 60. Le CSV est alors mis à jour et commité par GitHub Actions.
+  Même groupe `concurrency` que la collecte pour ne jamais écrire le CSV en même temps.
 - Mode test sans API : `06_classifier.py --lot N` affiche le prompt de N articles à coller dans le
   chat, `--importer fichier.json` réinjecte la réponse, `--evaluer` compare à l'annotation manuelle
   (`data/echantillon.csv`) sans l'écraser (sortie dans `data/echantillon_auto.csv`).

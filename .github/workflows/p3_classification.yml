@@ -1,10 +1,21 @@
 name: P3 classification
 
 on:
+  push:
+    paths:
+      - "scripts/06_classifier.py"
+      - "config/prompt_classification.txt"
+      - ".github/workflows/p3_classification.yml"
   workflow_run:
     workflows: ["Collecte"]  
     types: [completed]
   workflow_dispatch:
+    inputs:
+      refaire:
+        description: "Réannoter tous les articles déjà classés (sans limite de 60)"
+        required: false
+        type: boolean
+        default: false
 
 # Même groupe que la collecte : jamais deux workflows qui écrivent le CSV en même temps
 concurrency:
@@ -41,7 +52,13 @@ jobs:
           LLM_FOURNISSEUR: gemini
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           LLM_MODELE: gemini-3.5-flash-lite
-        run: python scripts/06_classifier.py --csv data/articles.csv --limite 60
+          REANNOTER: ${{ inputs.refaire || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reannotate]')) }}
+        run: |
+          if [[ "$REANNOTER" == "true" ]]; then
+            python scripts/06_classifier.py --csv data/articles.csv --refaire
+          else
+            python scripts/06_classifier.py --csv data/articles.csv --limite 60
+          fi
 
       - name: Notabilité
         if: ${{ !cancelled() }}
