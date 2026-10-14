@@ -38,7 +38,7 @@ jobs:
         env:
           LLM_FOURNISSEUR: gemini
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          LLM_MODELE: gemini-2.5-flash
+          LLM_MODELE: gemini-3.5-flash-lite
         run: python scripts/06_classifier.py --csv data/articles.csv --limite 60
 
       - name: Notabilité

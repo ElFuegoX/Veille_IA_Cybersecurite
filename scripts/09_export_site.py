@@ -118,6 +118,11 @@ def convert_row(row: dict[str, str], idx: int) -> dict:
 
     # Thème principal
     theme = row.get("theme_principal", "").strip()
+    if not theme:
+        for col in ("s1", "s2", "s3", "s4", "s5"):
+            if str(row.get(col, "")).strip() in ("1", "1.0", "true", "True"):
+                theme = col.upper()
+                break
 
     # Notabilité
     notabilite = safe_int(row.get("score_notabilite", ""), 0) or 0

@@ -1,17 +1,299 @@
 import { articles, themes } from '@/lib/veille';
 import { Info, TrendingUp } from 'lucide-react';
-const reliabilityItems = [{name:'Fiable', className:'good', series:'var(--series-2)'},{name:'À vérifier',className:'warning',series:'var(--series-4)'},{name:'Écarté',className:'bad',series:'var(--series-alert)'},{name:'Non évalué',className:'neutral',series:'var(--series-neutral)'}];
+
+const reliabilityItems = [
+  { name: 'Fiable', className: 'good', color: 'var(--series-2)' },
+  { name: 'À vérifier', className: 'warning', color: 'var(--series-4)' },
+  { name: 'Écarté', className: 'bad', color: 'var(--series-alert)' },
+  { name: 'Non évalué', className: 'neutral', color: 'var(--series-neutral)' },
+];
+
 export function ThemeChart() {
-  const items = [...themes.map(t => ({label:t.name,code:t.code,color:t.code === 'S4' ? 'series-3' : t.color,count:articles.filter(a=>a.theme===t.code).length})),{label:'À classer',code:'—',color:'series-neutral',count:articles.filter(a=>!a.theme).length}];
-  return <section className="chart-panel theme-panel"><div className="panel-heading"><div><h2>Répartition par sous-thème</h2><p>Les axes de recherche du corpus</p></div><span title="S1 à S5 : classification indicative du corpus fictif"><Info size={16}/></span></div><div className="bar-chart">{items.map(t=><div className="bar-row" key={t.code}><div className="bar-label"><span>{t.code}</span>{t.label}</div><div className="bar-track"><div className={`bar-fill bg-${t.color}`} style={{width:`${t.count / 40 * 100}%`}}/></div><strong>{t.count}</strong></div>)}</div><div className="chart-axis"><span>0</span><span>10</span><span>20</span><span>30</span><span>40</span></div><div className="panel-note"><span className="status-dot bg-series-neutral"/> {items.at(-1)?.count} articles en attente de classification</div></section>;
+  const items = [
+    ...themes.map(t => ({
+      label: t.name,
+      code: t.code,
+      color: t.color,
+      count: articles.filter(a => a.theme === t.code).length,
+    })),
+    {
+      label: 'À classer',
+      code: '—',
+      color: 'series-neutral',
+      count: articles.filter(a => !a.theme || a.theme === '—').length,
+    },
+  ];
+
+  const maxVal = Math.max(...items.map(t => t.count), 1);
+  const step = Math.ceil(maxVal / 4);
+  const axisTicks = [0, step, step * 2, step * 3, Math.max(step * 4, maxVal)];
+
+  return (
+    <section className="chart-panel theme-panel">
+      <div className="panel-heading">
+        <div>
+          <h2>Répartition par sous-thème</h2>
+          <p>Axes thématiques du corpus de veille</p>
+        </div>
+        <span title="Sous-thèmes S1 à S5 classés par IA et règles">
+          <Info size={16} />
+        </span>
+      </div>
+
+      <div className="bar-chart">
+        {items.map(t => {
+          const pct = Math.min(100, Math.round((t.count / maxVal) * 100));
+          return (
+            <div className="bar-row" key={t.code}>
+              <div className="bar-label" title={`${t.code} · ${t.label}`}>
+                <span>{t.code}</span>
+                <span className="bar-label-text">{t.label}</span>
+              </div>
+              <div className="bar-track">
+                <div
+                  className={`bar-fill bg-${t.color}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <strong>{t.count}</strong>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="chart-axis">
+        {axisTicks.map((val, idx) => (
+          <span key={idx}>{val}</span>
+        ))}
+      </div>
+
+      <div className="panel-note">
+        <span className="status-dot bg-series-neutral" />{' '}
+        {items.at(-1)?.count} article(s) en attente de classification
+      </div>
+    </section>
+  );
 }
+
 export function ReliabilityChart() {
-  const items = reliabilityItems.map(t=>({...t,count:articles.filter(a=>a.reliability===t.name).length}));
-  let offset = 0;
-  return <section className="chart-panel reliability-panel"><div className="panel-heading"><div><h2>Fiabilité du corpus</h2><p>Évaluation selon la grille CRAAP (Pertinence + Rigueur)</p></div><span className="tiny-label">SUR 11 POINTS</span></div><div className="reliability-content"><div className="donut-wrap"><svg viewBox="0 0 160 160" role="img" aria-label="Répartition de la fiabilité des 201 articles"><circle cx="80" cy="80" r="63" fill="none" stroke="var(--muted)" strokeWidth="17"/>{items.map(t=>{const length=t.count/201*395.84;const dashOffset=-offset;offset+=length;return <circle key={t.name} cx="80" cy="80" r="63" fill="none" stroke={t.series} strokeWidth="17" strokeDasharray={`${length-3} ${395.84-length+3}`} strokeDashoffset={dashOffset} transform="rotate(-90 80 80)"/>;})}</svg><div className="donut-number"><strong>{articles.filter(a=>a.score!==null).length}</strong><span>articles évalués</span></div></div><div className="donut-legend">{items.map(t=><div key={t.name}><span className={`legend-dot ${t.className}`}/><span>{t.name}</span><strong>{t.count}</strong><small>{Math.round(t.count/201*100)} %</small></div>)}</div></div><div className="panel-note"><Info size={13}/> Seuil d’admission : Pertinence ≥ 2/3 et Rigueur ≥ 6/8 (Total ≥ 8/11).</div></section>;
+  const total = articles.length || 1;
+  const items = reliabilityItems.map(t => ({
+    ...t,
+    count: articles.filter(a => a.reliability === t.name).length,
+  }));
+
+  // Circonférence d'un cercle r=63 : 2 * PI * 63 = 395.84
+  const circumference = 395.84;
+  let accumulated = 0;
+
+  const slices = items
+    .filter(t => t.count > 0)
+    .map(t => {
+      const length = (t.count / total) * circumference;
+      const strokeDashoffset = -accumulated;
+      accumulated += length;
+      return {
+        ...t,
+        length,
+        strokeDashoffset,
+      };
+    });
+
+  const evaluatedCount = articles.filter(a => a.score !== null).length;
+
+  return (
+    <section className="chart-panel reliability-panel">
+      <div className="panel-heading">
+        <div>
+          <h2>Fiabilité du corpus</h2>
+          <p>Évaluation selon la grille CRAAP (Pertinence + Rigueur)</p>
+        </div>
+        <span className="tiny-label">SUR 11 POINTS</span>
+      </div>
+
+      <div className="reliability-content">
+        <div className="donut-wrap">
+          <svg viewBox="0 0 160 160" role="img" aria-label="Répartition de la fiabilité du corpus">
+            {/* Anneau d'arrière-plan */}
+            <circle
+              cx="80"
+              cy="80"
+              r="63"
+              fill="none"
+              stroke="var(--muted)"
+              strokeWidth="16"
+            />
+            {/* Segments colorés */}
+            {slices.map(slice => (
+              <circle
+                key={slice.name}
+                cx="80"
+                cy="80"
+                r="63"
+                fill="none"
+                stroke={slice.color}
+                strokeWidth="16"
+                strokeDasharray={`${Math.max(0.5, slice.length - 2)} ${circumference - Math.max(0.5, slice.length - 2)}`}
+                strokeDashoffset={slice.strokeDashoffset}
+                transform="rotate(-90 80 80)"
+              />
+            ))}
+          </svg>
+          <div className="donut-number">
+            <strong>{evaluatedCount}</strong>
+            <span>articles évalués</span>
+          </div>
+        </div>
+
+        <div className="donut-legend">
+          {items.map(t => (
+            <div key={t.name}>
+              <span className={`legend-dot ${t.className}`} />
+              <span>{t.name}</span>
+              <strong>{t.count}</strong>
+              <small>{Math.round((t.count / total) * 100)} %</small>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="panel-note">
+        <Info size={13} /> Seuil d’admission : Pertinence ≥ 2/3 et Rigueur ≥ 6/8 (Total ≥ 8/11).
+      </div>
+    </section>
+  );
 }
+
 export function TimelineChart() {
-  const counts = Array.from({length:10},(_,i)=>articles.filter(a=>{const day=(Date.parse(a.date)-Date.UTC(2026,7,8))/86400000;return day>=i*7&&day<(i+1)*7;}).length);
-  const points=counts.map((n,i)=>`${40+i*108},${142-n*4.2}`).join(' ');
-  return <section className="chart-panel timeline-panel"><div className="panel-heading"><div><h2>Rythme des publications</h2><p>Articles collectés chaque semaine</p></div><span className="period-label">Août — Octobre 2026</span></div><div className="timeline-chart"><svg viewBox="0 0 1050 185" role="img" aria-label="Publications hebdomadaires d’août à octobre 2026">{[0,10,20,30].map(n=><g key={n}><line x1="40" x2="1020" y1={142-n*4.2} y2={142-n*4.2} stroke="var(--border)" strokeDasharray="3 5"/><text x="5" y={146-n*4.2} fill="var(--muted-foreground)" fontSize="11">{n}</text></g>)}<polygon points={`40,142 ${points} 1012,142`} fill="var(--chart-area)"/><polyline points={points} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinejoin="round"/>{counts.map((n,i)=><circle key={i} cx={40+i*108} cy={142-n*4.2} r="4" fill="var(--card)" stroke="var(--primary)" strokeWidth="2" aria-label={`${n} articles cette semaine`}/>)}{['10 août','17 août','24 août','31 août','7 sept.','14 sept.','21 sept.','28 sept.','5 oct.','12 oct.'].map((s,i)=><text key={s} x={40+i*108} y="177" textAnchor="middle" fill="var(--muted-foreground)" fontSize="11">{s}</text>)}</svg></div><div className="panel-note"><TrendingUp size={14}/><span>Une collecte continue, enrichie au fil du travail de groupe.</span></div></section>;
+  // Récupérer et trier les dates réelles présentes dans les articles
+  const dates = [...new Set(articles.map(a => a.date).filter(Boolean))].sort();
+
+  // Garder les 7 à 10 jours les plus récents (ou tous si moins de 10)
+  const recentDates = dates.slice(-9);
+
+  // Compter les articles par date
+  const counts = recentDates.map(d => articles.filter(a => a.date === d).length);
+  const maxCount = Math.max(...counts, 10);
+
+  // Formater les dates pour l'axe X (ex: "12 oct.")
+  const labels = recentDates.map(d => {
+    try {
+      return new Date(`${d}T12:00:00Z`).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'short',
+        timeZone: 'UTC',
+      });
+    } catch {
+      return d;
+    }
+  });
+
+  const width = 1000;
+  const height = 150;
+  const paddingLeft = 50;
+  const paddingRight = 40;
+  const chartWidth = width - paddingLeft - paddingRight;
+  const stepX = recentDates.length > 1 ? chartWidth / (recentDates.length - 1) : chartWidth;
+
+  const points = counts
+    .map((n, i) => {
+      const x = paddingLeft + i * stepX;
+      const y = height - (n / maxCount) * 110 - 20;
+      return `${x},${y}`;
+    })
+    .join(' ');
+
+  const areaPoints = `${paddingLeft},${height - 15} ${points} ${paddingLeft + (counts.length - 1) * stepX},${height - 15}`;
+
+  return (
+    <section className="chart-panel timeline-panel">
+      <div className="panel-heading">
+        <div>
+          <h2>Rythme des publications</h2>
+          <p>Articles collectés par date récente de publication</p>
+        </div>
+        <span className="period-label">
+          {labels[0] || 'Début'} — {labels.at(-1) || 'Aujourd’hui'}
+        </span>
+      </div>
+
+      <div className="timeline-chart">
+        <svg viewBox={`0 0 ${width} 185`} role="img" aria-label="Rythme récent des publications">
+          {/* Lignes horizontales de repère */}
+          {[0, Math.round(maxCount * 0.5), maxCount].map((n, i) => {
+            const y = height - (n / maxCount) * 110 - 20;
+            return (
+              <g key={i}>
+                <line
+                  x1={paddingLeft}
+                  x2={width - paddingRight}
+                  y1={y}
+                  y2={y}
+                  stroke="var(--border)"
+                  strokeDasharray="3 5"
+                />
+                <text x="10" y={y + 4} fill="var(--muted-foreground)" fontSize="11">
+                  {n}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Aire et courbe */}
+          {points && (
+            <>
+              <polygon points={areaPoints} fill="var(--chart-area)" />
+              <polyline
+                points={points}
+                fill="none"
+                stroke="var(--primary)"
+                strokeWidth="2.5"
+                strokeLinejoin="round"
+              />
+            </>
+          )}
+
+          {/* Points */}
+          {counts.map((n, i) => {
+            const cx = paddingLeft + i * stepX;
+            const cy = height - (n / maxCount) * 110 - 20;
+            return (
+              <circle
+                key={i}
+                cx={cx}
+                cy={cy}
+                r="4"
+                fill="var(--card)"
+                stroke="var(--primary)"
+                strokeWidth="2"
+                aria-label={`${n} articles le ${labels[i]}`}
+              />
+            );
+          })}
+
+          {/* Libellés de dates */}
+          {labels.map((s, i) => {
+            const x = paddingLeft + i * stepX;
+            return (
+              <text
+                key={i}
+                x={x}
+                y="175"
+                textAnchor="middle"
+                fill="var(--muted-foreground)"
+                fontSize="11"
+              >
+                {s}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
+
+      <div className="panel-note">
+        <TrendingUp size={14} />
+        <span>Collecte continue, mise à jour à chaque exécution du pipeline.</span>
+      </div>
+    </section>
+  );
 }

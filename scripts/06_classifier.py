@@ -33,7 +33,7 @@ from commun import (
 SOUS_THEMES = ["S1", "S2", "S3", "S4", "S5"]
 COLS_S = [t.lower() for t in SOUS_THEMES]
 # Colonnes P3 remplies par ce script
-COLS_P3 = COLS_S + ["justification_theme"]
+COLS_P3 = COLS_S + ["justification_theme", "theme_principal"]
 
 
 MIN_MOTS = 50         # en dessous, le texte n'est pas exploitable
@@ -92,10 +92,15 @@ def preparer(lignes, limite=0):
             continue
         texte = tronquer(lire_texte(r))
         if not texte:
+            # Fallback sur le résumé ou le titre pour que les flux RSS puissent être classés
+            resume = (r.get("resume") or "").strip()
+            titre = (r.get("titre") or "").strip()
+            if resume and len(resume.split()) >= 6:
+                texte = resume
+            elif titre:
+                texte = f"{titre}. {resume}".strip()
+        if not texte or len(texte.split()) < 3:
             ignores["sans_texte"] += 1
-            continue
-        if len(texte.split()) < MIN_MOTS:
-            ignores["texte_court"] += 1
             continue
         out.append({"id": norm_id(r["id"]), "titre": r["titre"],
                     "source": r["source"], "texte": texte})
@@ -210,7 +215,9 @@ def valider(res, article):
     if citation[:1] in ("=", "+", "-", "@"):
         citation = "'" + citation  # Excel ne doit pas l'exécuter comme une formule
 
+    actifs = [c.upper() for c, v in s.items() if v == 1]
     out = {c: str(v) for c, v in s.items()}
+    out["theme_principal"] = actifs[0] if actifs else ""
     out["justification_theme"] = citation
     return out
 
