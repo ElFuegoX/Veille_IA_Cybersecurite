@@ -1,11 +1,11 @@
 import rawData from '../data/articles.json';
 
 export const themes = [
-  { code: 'S1', name: 'IA offensive & Vecteurs d\u2019attaque', short: 'IA offensive', color: 'series-1' },
-  { code: 'S2', name: 'IA d\u00e9fensive & D\u00e9tection SOC', short: 'IA d\u00e9fensive', color: 'series-2' },
-  { code: 'S3', name: 'S\u00e9curit\u00e9 & Robustesse des mod\u00e8les', short: 'S\u00e9curit\u00e9 des mod\u00e8les', color: 'series-3' },
-  { code: 'S4', name: 'Gouvernance, Normes & R\u00e9gulation', short: 'Gouvernance & \u00e9thique', color: 'series-4' },
-  { code: 'S5', name: 'Menaces \u00e9mergentes & Agents autonomes', short: 'Menaces \u00e9mergentes', color: 'series-5' },
+  { code: 'S1', name: 'IA offensive & Vecteurs d\'attaque', short: 'IA offensive', color: 'series-1' },
+  { code: 'S2', name: 'Attaques ciblant les IA & Robustesse', short: 'Attaques contre IA', color: 'series-2' },
+  { code: 'S3', name: 'Sécurité du code généré & Assistants', short: 'Code généré', color: 'series-3' },
+  { code: 'S4', name: 'IA défensive & Détection SOC', short: 'IA défensive', color: 'series-4' },
+  { code: 'S5', name: 'Gouvernance, Risques & Régulation', short: 'Gouvernance & risques', color: 'series-5' },
 ];
 
 export type Reliability = 'Fiable' | '\u00c0 v\u00e9rifier' | '\u00c9cart\u00e9' | 'Non \u00e9valu\u00e9';

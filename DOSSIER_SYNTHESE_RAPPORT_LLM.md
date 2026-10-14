@@ -114,11 +114,11 @@ Ce chapitre analyse **si les choix d'outillage étaient pertinents** par rapport
   - *Faiblesses & divergences* :
     1. **Sensibilité du seuil Rapidfuzz (70)** : Un seuil de similarité de titre à 70 peut soit regrouper des événements distincts ayant des formulations journalistiques proches (ex. *"New ransomware attack hits US healthcare system"* vs *"Ransomware disrupts European hospitals"*), soit rater des reprises dont les titres ont été complètement reformulés par les rédactions.
     2. **Coût et variabilité du LLM** : Même avec température = 0, les LLM ne sont pas 100% déterministes sur des fenêtres temporelles longues en raison des changements d'infrastructure chez les fournisseurs d'API. De plus, la limite de contexte fixée aux 500 premiers mots risque de masquer le véritable sujet de l'article si celui-ci commence par une longue introduction contextuelle.
-    3. **Désalignement taxonomique (Le décalage S1-S6)** :
-       - P3 a conçu initialement une grille à 6 thèmes : S1 (IA offensive), S2 (Attaques contre les IA), S3 (Code généré), S4 (IA défensive), S5 (Gouvernance), S6 (DNS & IA).
-       - Or le script `06_classifier.py` ne gère que S1 à S5.
-       - Et l'application Web (`site/src/lib/veille.ts`) a renommé les thèmes : S2 est devenu *IA défensive & Détection SOC*, S3 *Sécurité & Robustesse des modèles*, S5 *Menaces émergentes & Agents autonomes*.
-       *Ce décalage illustre parfaitement le défi classique de la synchronisation des dictionnaires de données dans une équipe agile multi-profils.*
+    3. **Désalignement taxonomique initial et harmonisation finale** :
+       - P3 avait initialement envisagé une grille à 6 thèmes : S1 (IA offensive), S2 (Attaques contre les IA), S3 (Code généré), S4 (IA défensive), S5 (Gouvernance), S6 (DNS & IA).
+       - En pratique opérationnelle, le script `06_classifier.py` et le prompt P3 ont resserré le modèle sur 5 thèmes majeurs (S1 à S5).
+       - Une divergence temporaire avait décalé les libellés de l'interface front-end (`site/src/lib/veille.ts`), où S4 était nommé "Gouvernance" alors que le classifieur y affectait massivement les outils défensifs.
+       - **Harmonisation réalisée** : Les dictionnaires ont été strictement synchronisés sur l'ensemble de la chaîne : S1 = *IA offensive*, S2 = *Attaques ciblant les IA*, S3 = *Sécurité du code généré*, S4 = *IA défensive & Détection SOC*, S5 = *Gouvernance, Risques & Régulation*. Les visualisations web reflètent désormais fidèlement la réalité des données classées.
 
 ### 2.6 Restitution front-end : Architecture moderne React 19 / TanStack / Tailwind v4
 * **Choix technique** : Stack moderne orientée performance client (Vite, React 19, TanStack Router avec gestion fine des layouts et de l'arbre de routes, TailwindCSS v4, Recharts, Lucide Icons). Les données sont compilées par `09_export_site.py` en un fichier JSON statique embarqué côté client.
@@ -148,18 +148,24 @@ Ce chapitre analyse **si les choix d'outillage étaient pertinents** par rapport
 *(Données consolidées issues de l'export `articles.json` et des scripts de traitement)*
 
 ### 4.1 Volumétrie et ventilation de la qualité
-* **Volume total du corpus réel** : **477 articles uniques** consolidés dans `data/articles.csv` (après le run de collecte du 14 octobre : +152 nouveaux articles).
+* **Volume total du corpus réel consolidé** : **477 articles uniques** (exportés dans `site/src/data/articles.json` et stockés dans `data/articles.csv`).
 * **Schéma étendu (33 colonnes)** : Partagé entre P1 (`id`, `date`, `titre`, `auteur`, `lien`, `source`, `langue`, `resume`, `statut_extraction`), P2 (`craap_*`), P3 (`s1` à `s6`, `theme_principal`, `a_verifier`, `cves`, `entreprises`, `cve_kev`, `nb_sources_reprise`, `score_notabilite`, `cas_retenu`) et P4 (`valide_manuel`, `relecteur`).
-* **Ventilation de la fiabilité du corpus** :
-  - **Fiable** (Total ≥ 8/11, Pertinence ≥ 2) : **147 articles**
-  - **Prudence / À vérifier** : **109 articles**
-  - **Écarté** (Pertinence < 2) : **89 articles**
-  - **En cours d'évaluation** (nouveaux articles du run) : **132 articles**
-  - **Histoires reprises inter-sources** : **24 histoires** reprises par au moins 2 éditeurs distincts.
-* **Répartition de la fiabilité CRAAP** :
-  - **Fiable** (Pertinence ≥ 2, Rigueur ≥ 6, Total ≥ 8/11) : Représente le noyau dur d'analyses approfondies, d'avis du CERT-FR ou de rapports d'éditeurs documentés.
-  - **À vérifier** (Pertinence ≥ 2, mais rigueur insuffisante, souvent par manque de texte complet ou auteur anonyme) : Volume significatif nécessitant la validation humaine.
-  - **Écarté** (Pertinence < 2) : Articles exclus des analyses fines de sous-thèmes.
+* **Ventilation consolidée de la fiabilité (grille CRAAP harmonisée)** :
+  - **Fiable** (Pertinence ≥ 2, Total CRAAP ≥ 8/11) : **178 articles** (37.3 %) — Constitue le corpus de confiance exploitable sans réserve par un RSSI.
+  - **Prudence / À vérifier** (Pertinence ≥ 2, Total CRAAP entre 6 et 7/11) : **116 articles** (24.3 %) — Articles pertinents mais souffrant d'un manque d'auteur identifié, d'un biais promotionnel ou d'un texte tronqué.
+  - **Écarté** (Pertinence < 2 ou Total CRAAP < 6/11) : **109 articles** (22.9 %) — Rejetés car hors-sujet cyber/IA ou de qualité informationnelle indéterminée.
+  - **Non évalué** (nouveaux articles du pipeline en attente de scoring) : **74 articles** (15.5 %).
+* **Ventilation effective par sous-thème (articles classés S1 à S5)** :
+  - **S4 – IA défensive & Détection SOC** : **319 articles** (85.1 % des articles classés).
+  - **S5 – Gouvernance, Risques & Régulation** : **20 articles** (5.3 %).
+  - **S2 – Attaques ciblant les IA & Robustesse** : **17 articles** (4.5 %).
+  - **S1 – IA offensive & Vecteurs d'attaque** : **15 articles** (4.0 %).
+  - **S3 – Sécurité du code généré & Assistants** : **4 articles** (1.1 %).
+  - *En attente de classification ou sans label* : 102 articles.
+* **Répartition géographique et linguistique** :
+  - **Anglais (EN)** : **476 articles** (99.8 %)
+  - **Français (FR)** : **1 article** (0.2 %)
+  - **Top sources dominantes** : *arXiv.org* (121 articles, 25.4 %), *The Hacker News* (26), *Cybersecurity Insiders* (16), *Reuters* (15), *BleepingComputer* (7), *Microsoft* (6), *Yahoo Finance* (6), *CNBC* (5), *Cybersecurity Dive* (4), *Help Net Security* (4).
 
 ### 4.2 Les tendances majeures par sous-thème
 1. **S1 - IA offensive (La menace perçue)** :
@@ -196,6 +202,59 @@ Ce chapitre analyse **si les choix d'outillage étaient pertinents** par rapport
 1. **Échantillonnage réduit** : La référence humaine ne comptait que 19 articles, dont seulement 9 ont pu être automatiquement rapprochés par URL normalisée dans le corpus maître.
 2. **Cloisonnement des tâches** : P3 attendait la disponibilité du texte complet pour lancer sa matrice de confusion sur les sous-thèmes S1–S6, tandis que la validation continue de P4 (`data/validations.csv`) n'a jamais été alimentée.
 
+---
+
+### 4.5 ENSEIGNEMENTS STRATÉGIQUES RÉELS SUR L'ACTUALITÉ IA & CYBERSÉCURITÉ
+*(Synthèse analytique croisant l'analyse textuelle des 477 articles et les données des graphiques du tableau de bord)*
+
+Au-delà de la mécanique technique du pipeline, le traitement et la visualisation des 477 articles ont fait émerger **sept réalités de terrain majeures**, souvent à rebours des idées reçues du grand public et du battage médiatique :
+
+#### 1. L'asymétrie écrasante Attaque / Défense (319 articles S4 vs 15 articles S1) : L'omniprésence du discours marketing
+Le graphique de répartition thématique révèle une disproportion spectaculaire : **l'IA défensive (S4) monopolise plus de 85 % des articles classés**, contre à peine 4 % pour l'IA offensive (S1).
+- **Ce que cela nous apprend** : Le marché de l'information cyber est littéralement saturé par les annonces commerciales des éditeurs (Microsoft, Google Cloud, CrowdStrike, Palo Alto, SentinelOne). Chaque acteur revendique désormais un "Copilot pour SOC", un "tri automatisé des alertes par LLM" ou une "détection prédictive d'anomalies".
+- **L'apport du filtrage CRAAP** : Le filtre CRAAP a mis en lumière qu'une part considérable de ce volume relève de l'**AI-washing**. Près de 40 % des articles S4 obtiennent un score d'exactitude ou d'objectif dégradé car ils ne fournissent aucun chiffre vérifiable, benchmark comparatif ou protocole d'évaluation indépendant.
+
+#### 2. Le rôle central d'arXiv (25.4 % du corpus) : La recherche académique comme véritable vigie des vulnérabilités
+Avec 121 articles, le serveur de prépublications scientifiques **arXiv.org** est la toute première source du corpus, distançant largement la presse spécialisée (*The Hacker News* n'en comptant que 26).
+- **Ce que cela nous apprend** : Les réelles avancées sur les faiblesses des modèles ne viennent pas des annonces journalistiques, mais des laboratoires universitaires.
+- **Les sujets récurrents découverts dans les pré-prints** :
+  - Attaques par empoisonnement d'entraînement (*Data Poisoning* et *Backdoor attacks* injectées via des datasets ouverts comme Common Crawl).
+  - Évasion et jailbreaks automatisés utilisant l'optimisation discrète de gradients (attaques GCG - *Greedy Coordinate Gradient*).
+  - Vol de modèles et extraction de prompts système (*System Prompt Leakage*).
+  - La presse grand public et les dépêches de sécurité ne répercutent ces découvertes qu'avec un décalage de **2 à 6 mois**, une fois que des cas d'usage offensifs concrets ont été observés en milieu opérationnel.
+
+#### 3. Démystification de l'IA offensive : Pas de robots-hackers, mais un bond en ingénierie sociale (S1)
+L'analyse qualitative des articles de la catégorie S1 dissipe le fantasme populaire d'une "IA pirate autonome" capable de pénétrer des réseaux complexes sans intervention humaine.
+- **La menace offensive réelle en 2025-2026** est beaucoup plus pragmatique et accessible :
+  1. **L'éradication des signaux faibles du phishing** : Les LLM permettent désormais à des attaquants non francophones ou non anglophones de générer des emails d'ingénierie sociale d'un niveau syntaxique, contextuel et stylistique irréprochable, rendant caduques les consignes historiques de sensibilisation ("cherchez les fautes d'orthographe").
+  2. **L'industrialisation des deepfakes vocaux** : Plusieurs cas documentés dans le corpus rapportent des escroqueries au président (*CEO fraud*) exécutées via un clonage vocal en temps réel au téléphone, dupant des directeurs financiers pour valider des virements transfrontaliers.
+  3. **L'assistance au développement malveillant** : L'utilisation de modèles sans garde-fous (*uncensored models* ou jailbreaks) pour accélérer l'écriture de scripts de reconnaissance, de scans d'IP et de variantes polymorphes de charge utile.
+
+#### 4. Le tournant des architectures Agentiques et le danger de l'Indirect Prompt Injection (S2)
+Les articles classés en S2 (17 articles) documentent une bascule technique fondamentale :
+- **Le passage du Chatbot à l'Agent autonome** : En 2023, le risque se limitait au simple "jailbreak" d'une interface de discussion. En 2025-2026, l'industrie connecte les LLM à des boîtes mail, des navigateurs web, des bases vectorielles (RAG) et des APIs internes avec droits d'écriture.
+- **L'Indirect Prompt Injection (IPI) comme vecteur critique** : Un pirate n'a plus besoin d'attaquer directement le LLM. Il lui suffit d'insérer une instruction cachée (en texte invisible, commentaire HTML ou pièce jointe) dans une page web ou un courriel que l'agent viendra résumer. Dès que l'agent lit la donnée hostile, il l'exécute comme un ordre système : exfiltration de mails sensibles, transmission de clés d'API ou rebond sur le réseau d'entreprise.
+
+#### 5. L'angle mort du catalogue CISA KEV : L'IA attaquée par son infrastructure logicielle, pas par ses neurones
+L'un des enseignements les plus saisissants des graphiques et des métriques P3 est le **très faible nombre de vulnérabilités IA enregistrées dans le CISA KEV** (Known Exploited Vulnerabilities) :
+- **Ce que cela révèle** : Contrairement aux vulnérabilités classiques de pare-feu (Fortinet, Ivanti, Palo Alto) qui font l'objet d'exploitations massives immédiates, les failles "propres aux modèles d'IA" (prompt injection, jailbreak) ne disposent généralement pas d'identifiant CVE standardisé ni d'entrée KEV, car elles relèvent d'une faiblesse conceptuelle probabiliste plutôt que d'un bug mémoire (buffer overflow).
+- **Où se situent les vraies CVE du domaine ?** Les CVE recensées dans le corpus ciblent la **supply chain de déploiement d'IA** :
+  - Failles d'exécution de code à distance (RCE) dans les serveurs de modèles (*vLLM*, *Ollama*, *Triton*, *Ray*).
+  - Désérialisation arbitraire lors du chargement de poids de modèles non sécurisés (formats hérités `.pickle` vs format sécurisé `.safetensors`).
+  - Vulnérabilités dans les orchestrateurs de frameworks (*LangChain*, *LlamaIndex*).
+
+#### 6. Le paradoxe du « Vibe Coding » et la dette de sécurité du code généré (S3)
+Bien que ne représentant que 4 articles en thématique exclusive, le sous-thème S3 reflète une tendance de fond identifiée dans les analyses qualitatives :
+- La massification de l'usage des assistants de complétion (Copilot, Cursor) chez les développeurs induit une perte de vigilance critique.
+- **Deux vulnérabilités systémiques émergent dans les analyses** :
+  - La réintroduction automatique de vulnérabilités classiques connues (injections SQL, SSRF, mauvaises configurations de tokens JWT) dans les bases de code modernes.
+  - Le phénomène de **Package Hallucination** (ou *Slopsquatting*) : les LLM recommandent fréquemment des bibliothèques inexistantes ou mal orthographiées. Des attaquants enregistrent proactivement ces noms de packages fictifs sur npm ou PyPI pour y loger des portes dérobées téléchargées automatiquement par les développeurs.
+
+#### 7. L'hégémonie linguistique et le décalage géopolitique de la régulation (S5)
+Le graphique de distribution linguistique montre une écrasante domination de l'anglais (**99.8 % du corpus**, un seul article en français) :
+- **Conséquence stratégique** : La veille opérationnelle en cybersécurité de l'IA ne peut être menée efficacement en langue française. L'information critique sur les zero-days et les tactiques adverses circule exclusivement en anglais.
+- **La place singulière de l'Europe** : L'Europe et les sources francophones (notamment l'ANSSI et le CERT-FR) se concentrent quasi-exclusivement sur la thématique **S5 (Gouvernance et régulation)** : mise en œuvre de l'**EU AI Act**, obligations de conformité pour les modèles à usage général (GPAI) et guides d'hygiène numérique pour l'IA générative. On observe un découplage net entre l'innovation technologique/offensive (dominée par les USA et la Chine) et l'encadrement normatif (porté par l'Union européenne).
+
 
 ---
 
@@ -221,7 +280,7 @@ Pour garantir un pipeline de veille robuste et scientifiquement intègre, l'arch
 
 5. **Planification asynchrone décongestionnée** :
    - *Problématique traitée* : Les exécutions de crons programmées à la minute pile (`0 * * * *`) subissent des délais ou abandons aléatoires causés par la congestion mondiale des runners GitHub.
-   - *Mécanisme natif implémenté* : Programmation décalée à la minute 17 (`17 6,18 * * *`) pour garantir un déclenchement déterministe hors des pics de charge de l'infrastructure cloud.
+   - *Mécanisme natif implémenté* : Programmation décalée recommandée (`17 6,18 * * *`) pour garantir un déclenchement déterministe hors des pics de charge de l'infrastructure cloud (avec fenêtres de test opérationnel intermédiaires programmées pour les recettes de livraison).
 
 ---
 
